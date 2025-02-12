@@ -1,0 +1,44 @@
+- Giao diện game, gồm:
+	- Nút "Play"
+	- Nút "Help" - instruction
+	- Nút "Exit" - Thoát game
+	- Background, chèn thêm nhạc
+	- (có thể) nút chỉnh âm lượng
+    - "Help": Hiện ra hướng dẫn và ở góc sẽ có nút play
+	      (có thể) có một nút quay lại menu giao diện ở góc khác 
+Codegame (phần lày đang học, nhưng mà chắc sẽ cần những cái này):
+    - Render giao diện, nhân vật, vật cản, background
+    - Hiệu ứng chuyển động, tốc độ
+    - Collision
+    - (có thể) Khi va chạm với vật, đổi hoạt ảnh
+    - Nhân Vật: HP, 2 chuyển động nhảy và bắn
+    - Hiệu ứng chuyển tiếp background
+    - (có thể) đổi object khác nhau giữa các background
+    - Nhặt "key" trên đường chạy, Hiển thị keynhư nào thì hợp lý
+    - SINH NGẪU NHIÊN 
+    - Hiện điểm, high score (lưu vào file)
+    - Đếm số vật thể đốt được (Có thể làm thêm phần huy chương)
+    - Nút Pause và Continue trong game
+    - Play Again hoặc Exit sau khi chơi hết mạng
+    - (có thể) hoạt ảnh lăn lộn khi tiếp đất (nhảy từ nơi cao hơn xuống nơi thấp hơn
+Hoạt ảnh (tui đoán thế), spire sheet đồ, bàn thêm sau:
+    - Background giao diện
+    - Các nút tương tác (Play, Help, Exit, Sound, Pause/Continue)
+    - Một số nền khác (?) (Tên game, Giới Thiệu/Hướng dẫn, Play Again or Exit)
+    - Background game (dùng chung vài cái với dao diện cúng đc) 
+    - Vật thể của game (có lẽ là ảnh PNG) (có một số cái sẽ cần hiệu ứng chuyển động):
+	- Đường chạy (chắc cần hiệu ứng chuyển động)
+	- Nhân vật (ofc)
+	- Vật cản (cái nào khè lửa đốt đc thì thêm hiệu ứng biến mất (?) )
+	- Thao tác khè lửa 
+	
+
+Minh họa nhảy nơi cao xuống thấp
+
+			 (.00.)
+________________________
+------------------------|	   (xuống đây ghép hoạt ảnh cho lăn 1 vòng) 
+			|	_________________________
+			|      |-------------------------|
+			       |			 |
+			       |			 |
