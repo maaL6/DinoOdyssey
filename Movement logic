@@ -1,0 +1,4 @@
+characterVelocity += GRAVITY;
+characterPosY += characterVelocity; 
+player.y_velocity += GRAVITY;
+player.rect.y += player.y_velocity;
