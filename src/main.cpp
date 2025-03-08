@@ -1,4 +1,4 @@
-﻿#include "Game_Base.h"
+#include "Game_Base.h"
 #include "Game_Utils.h"
 #include "LTexture.h"
 #include "Elements.h"
@@ -25,6 +25,7 @@ void waitUntilKeyPressed() {
 const SDL_Color COLOR_RED = {255, 0, 0, 255};
 const SDL_Color COLOR_BLACK = {0, 0, 0, 255};
 
+int REMAINING_HEARTS = 3;
 int SPIKE_SIZE = 50;
 const int PLAYER_SIZE = 57;
 const int GROUND_LEVEL_HIGH = SCREEN_HEIGHT - PLAYER_SIZE - 100;  // Nền thấp
@@ -49,7 +50,7 @@ int currentGroundLevel = GROUND_LEVEL_LOW;
 int characterSize = 57;
 int characterHeigh = characterSize;
 int characterWidth = characterSize;
-int characterPosX = SCREEN_WIDTH - 800;
+int characterPosX = 200;
 int characterPosY = currentGroundLevel;
 float characterVelocity = 0;
 
@@ -208,12 +209,13 @@ void resetGame(GameObject& player, std::vector<GameObject>& obstacles, std::vect
     player.rect = {characterPosX, characterPosY, PLAYER_SIZE, PLAYER_SIZE};
     player.y_velocity = 0;
 
-    characterPosX = SCREEN_WIDTH - 800;
+    characterPosX = 200;
     characterPosY = currentGroundLevel - 100;
     characterVelocity = 0;
     //Clear CHUONG NGAI VAT
     spikes.clear();
-
+//Reset mạng
+    int REMAINING_HEARTS = 3;
 }
 
 bool checkAABBCollision(const SDL_Rect& a, const SDL_Rect& b) {
@@ -242,6 +244,11 @@ int main(int argc, char* argv[]) {
     CloseButton.SetInteract(15, 15, 30, 30);
     SettingButton.SetInteract(15, 15, 30, 30);
     MenuButton.SetInteract(15, 15, 30, 30);
+
+    //frame
+    int currentFrame = 0;
+    int frameDelay = 200;
+    Uint32 lastFrameTime = SDL_GetTicks();
 
     if (!Init()) {
         printf("Failed to initialize!\n");
@@ -286,15 +293,23 @@ int main(int argc, char* argv[]) {
                 gTransTexture.Render(0, 0, gRenderer);
                 //labtube
 
-                SDL_Rect* currentClip_Labtube = nullptr;
-
-                currentClip_Labtube = &gLabtube[2];
-                SDL_Rect renderSpace = {0, 0, 800, 500};
-                SDL_RenderCopy(gRenderer, gLabtubeTexture.mTexture, currentClip_Labtube, &renderSpace);
+                //SDL_RenderCopy(gRenderer, gLabtubeTexture.mTexture, currentClip_Labtube, &renderSpace);
                 //ControlLabtubeFrame(frame_Labtube);
                 //SDL_Delay(2000);
                 //
 
+
+                // Cập nhật frame
+                Uint32 currentTime = SDL_GetTicks();
+                SDL_Rect renderSpace = {0, 0, 800, 500};
+                if (currentTime - lastFrameTime >= frameDelay) {
+                    currentFrame = (currentFrame + 1) % 3; // Chuyển frame, quay lại 0 khi tới 3
+                    lastFrameTime = currentTime;
+                }
+                //SDL_RenderCopy(gRenderer, gLabtubeTexture.mTexture, &gLabtube[currentFrame], &renderSpace);
+                gLabtubeTexture.Render(0, 0, gRenderer, &gLabtube[currentFrame]);
+
+                //end labtube
                 gVineTexture.Render(0, 0, gRenderer);
                 gNameTexture.Render(0, 0, gRenderer);
 
@@ -558,14 +573,24 @@ int main(int argc, char* argv[]) {
                                 }
                             }
                         }
-                        for (const auto& spike : spikes) {
-                            if (checkAABBCollision(player.rect, spike.rect)) {
+
+                        //cout << REMAINING_HEARTS << " \n";
+                        for (auto it = spikes.begin(); it != spikes.end();) {
+                            if (checkAABBCollision(player.rect, it->rect)) {
                                 std::cout << "Chạm gai! Game Over!" << std::endl;
-                                running = false;
-                                Quit = true;
-                                break;
+                                REMAINING_HEARTS -= 1;
+                                Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
+                                it = spikes.erase(it); // Xóa gai đã va chạm
+                                if (REMAINING_HEARTS <= 0) {
+                                    running = false; // Dừng trò chơi nếu hết mạng
+                                    break;
+                                }
+                                SDL_Delay(500);
+                            } else {
+                                ++it;
                             }
                         }
+
                         /*
                         if (!isOnGround && player.rect.y > SCREEN_HEIGHT) {
                             std::cout << "Rơi khỏi nền! Game Over!" << std::endl;
@@ -574,11 +599,17 @@ int main(int argc, char* argv[]) {
                         if (!isOnGround && characterPosY > SCREEN_HEIGHT) {
                             std::cout << "Rơi khỏi nền! Game Over!" << std::endl;
                             //running = false; // Dừng vòng lặp trò chơi
+                            REMAINING_HEARTS = 0;
                             Mix_PauseMusic();
                             Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
                             UpdateHighScore("high_score.txt", score, highscore);
                             Quit = true;
                         }
+                        //Het tim
+                        if(!REMAINING_HEARTS) {
+                            Quit = true;
+                        }
+                        gHeartTexture.Render(200,0,gRenderer,&gHeart[REMAINING_HEARTS]);
 
                         // Sinh khung
 
@@ -604,9 +635,11 @@ int main(int argc, char* argv[]) {
 
                     }
                 }
+                // End game
 
-                DrawEndGameSelection(gLoseTexture, &e, gRenderer, Play_Again);
+                //DrawEndGameSelection(gLoseTexture, &e, gRenderer, Play_Again);
                 if (Play_Again) {
+                    REMAINING_HEARTS = 3;
                     bool End_Game = false;
                     while (!End_Game) {
                         while (SDL_PollEvent(&e) != 0) {
@@ -893,6 +926,18 @@ bool LoadMedia() {
                     gLabtube[i].y = 0;
                     gLabtube[i].w = 800;
                     gLabtube[i].h = 500;
+                }
+            }
+
+            if (!gHeartTexture.LoadFromFile("images/heart.png", gRenderer)) {
+                std::cout << "Failed to load heart.png " << std::endl;
+                success = false;
+            } else {
+                for (int i = 0; i < 4; ++i) { //4: number of heart frame
+                    gHeart[i].x = 140 * i;
+                    gHeart[i].y = 0;
+                    gHeart[i].w = 140;
+                    gHeart[i].h = 60;
                 }
             }
 
