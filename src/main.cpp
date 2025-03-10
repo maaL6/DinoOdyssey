@@ -861,22 +861,22 @@ int main(int argc, char* argv[]) {
                     if (spike.type == 0) {
                         //destRect.y += 25;
                         SDL_RenderCopy(gRenderer, spikeTexture, nullptr, &spike.rect);
-                        SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
+                        //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
 
                     } else {
                         SDL_RenderCopy(gRenderer, robotTexture, nullptr, &spike.rect);
-                        SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
+                        //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
                     }
                 }
 
                 for (const auto& bullet : bullets) {
                     SDL_RenderCopy(gRenderer, bulletTexture, nullptr, &bullet.rect);
-                    SDL_RenderDrawRect(gRenderer, &bullet.collisionRect); //Vien
+                    //SDL_RenderDrawRect(gRenderer, &bullet.collisionRect); //Vien
                 }
 
                 for (const auto& powerUp : powerUps) {
                     SDL_RenderCopy(gRenderer, powerUpTexture, nullptr, &powerUp.rect);
-                    SDL_RenderDrawRect(gRenderer, &powerUp.collisionRect);
+                    //SDL_RenderDrawRect(gRenderer, &powerUp.collisionRect);
                 }
 
                 SDL_Rect* currentClip_Pause = &gPauseButton[PauseButton.currentSprite];
@@ -895,7 +895,7 @@ int main(int argc, char* argv[]) {
 
                 // Thêm viền cho player.collisionRect (màu xanh lá để dễ nhìn)
                 SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255); // Màu xanh lá
-                SDL_RenderDrawRect(gRenderer, &player.collisionRect);
+                //SDL_RenderDrawRect(gRenderer, &player.collisionRect);
 
                 SDL_RenderPresent(gRenderer);
             }
