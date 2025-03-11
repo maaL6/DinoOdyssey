@@ -682,8 +682,8 @@ int main(int argc, char* argv[]) {
                 int newPlatformX = lastPlatformX + (rand() % MAX_PLATFORM_GAP) + 200;
 
                 GameObject obstacle;
-                obstacle.rect = {newPlatformX, currentGroundLevel, obstacleWidth, 100};
-                obstacle.collisionRect = {newPlatformX, currentGroundLevel, obstacleWidth, 100};
+                obstacle.rect = {newPlatformX, currentGroundLevel, obstacleWidth, 10};
+                obstacle.collisionRect = {newPlatformX, currentGroundLevel, obstacleWidth, 5};
                 obstacle.color = COLOR_RED;
                 obstacle.x_velocity = -obstacleSpeed;
                 obstacle.y_velocity = 0;
@@ -697,8 +697,9 @@ int main(int argc, char* argv[]) {
                         GameObject spike;
                         spike.type = (rand() % 2);
                         if(spike.type == 1) { //robot
-                            spike.rect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2 - 10, currentGroundLevel - ROBOT_SIZE, ROBOT_SIZE, ROBOT_SIZE};
-                            spike.collisionRect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2, currentGroundLevel - ROBOT_SIZE + 20, ROBOT_COLLISION_SIZE, ROBOT_COLLISION_SIZE};
+                            int randomRobotHeight = rand()%100;
+                            spike.rect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2 - 10, currentGroundLevel - ROBOT_SIZE - randomRobotHeight, ROBOT_SIZE, ROBOT_SIZE};
+                            spike.collisionRect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2, currentGroundLevel - ROBOT_SIZE + 20 - randomRobotHeight, ROBOT_COLLISION_SIZE, ROBOT_COLLISION_SIZE};
                         } else { //poison
                             spike.rect = {newPlatformX + i * spikeSpacing - POISON_SIZE / 2, currentGroundLevel - POISON_SIZE + 25, POISON_SIZE, POISON_SIZE};
                             spike.collisionRect = {newPlatformX + i * spikeSpacing - POISON_SIZE / 2 + 15, currentGroundLevel - POISON_SIZE + 35, POSION_COLLISION_SIZE, POSION_COLLISION_SIZE};
