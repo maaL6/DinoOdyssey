@@ -35,7 +35,7 @@ const int BULLET_RANGE = 200;
 const float POWERUP_PROBABILITY = 0.9f;
 const int POWERUP_SIZE = 40;
 const int MAX_BULLETS = 5;
-const int RENDER_OFFSET_Y = -23; // Độ lệch để render thấp hơn, bạn có thể thay đổi giá trị này
+const int RENDER_OFFSET_Y = -23; 
 const int ROBOT_SIZE = 70;
 const int POISON_SIZE = 70;
 const int ROBOT_COLLISION_SIZE = 50;
@@ -62,12 +62,12 @@ SDL_Texture* spike2SheetTexture = nullptr;
 SDL_Texture* bulletTexture = nullptr;
 SDL_Texture* powerUpTexture = nullptr;
 SDL_Texture* robotTexture = nullptr;
-SDL_Texture* gameStateTexture = nullptr; // Texture trung gian để lưu hiện trường
+SDL_Texture* gameStateTexture = nullptr; 
 
 // Structures
 struct GameObject {
-    SDL_Rect rect;          // Dùng để render
-    SDL_Rect collisionRect; // Dùng để check va chạm
+    SDL_Rect rect;         
+    SDL_Rect collisionRect; 
     SDL_Color color;
     float x_velocity;
     float y_velocity;
@@ -77,8 +77,8 @@ struct GameObject {
 };
 
 struct Bullet {
-    SDL_Rect rect;          // Dùng để render
-    SDL_Rect collisionRect; // Dùng để check va chạm
+    SDL_Rect rect;         
+    SDL_Rect collisionRect; 
     float x_velocity;
     float y_velocity;
     float startX;
@@ -120,8 +120,8 @@ void resetGame(GameObject& player, vector<GameObject>& obstacles, vector<GameObj
     initialPlatform.y_velocity = 0;
     obstacles.push_back(initialPlatform);
 
-    player.rect = {200 + RENDER_OFFSET_Y, currentGroundLevel - 100 + RENDER_OFFSET_Y, PLAYER_SIZE, PLAYER_SIZE}; // Render thấp hơn
-    player.collisionRect = {200, currentGroundLevel - 100, PLAYER_COLLISION_SIZE, PLAYER_COLLISION_SIZE}; // Vùng va chạm ở vị trí chuẩn
+    player.rect = {200 + RENDER_OFFSET_Y, currentGroundLevel - 100 + RENDER_OFFSET_Y, PLAYER_SIZE, PLAYER_SIZE}; 
+    player.collisionRect = {200, currentGroundLevel - 100, PLAYER_COLLISION_SIZE, PLAYER_COLLISION_SIZE}; 
     player.x_velocity = 0;
     player.y_velocity = 0;
     REMAINING_HEARTS = 3;
@@ -695,7 +695,6 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            // Phần cập nhật logic game (chỉ khi không tạm dừng)
             if (Game_State) {
                 int obstacleWidth = 3000 + (rand() % 500);
                 currentGroundLevel = (currentGroundLevel == GROUND_LEVEL_LOW) ? GROUND_LEVEL_HIGH : GROUND_LEVEL_LOW;
@@ -835,7 +834,6 @@ int main(int argc, char* argv[]) {
                     //UpdateHighScore("high_score.txt", score, highscore);
                     Quit = true;
 
-                    //  texture trung gian
 
                     if (gameStateTexture) SDL_DestroyTexture(gameStateTexture);
                     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
@@ -857,11 +855,11 @@ int main(int argc, char* argv[]) {
                 ControlCharFrame(frame_Character);
 
                 player.y_velocity += GRAVITY;
-                player.collisionRect.y += player.y_velocity; // Cập nhật va chạm trước
-                player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y; // Render thấp hơn
+                player.collisionRect.y += player.y_velocity; 
+                player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y; 
             }
 
-            // Phần render (luôn render toàn bộ cảnh game, thêm nút Continue khi tạm dừng)
+          
             SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
             SDL_RenderClear(gRenderer);
 
@@ -957,7 +955,6 @@ int main(int argc, char* argv[]) {
 
             //AgainButton.SetInteract(SCREEN_WIDTH / 2 - 87, SCREEN_HEIGHT / 2 + 50, 175, 90);
 
-            // Giảm độ mờ của gLoseTexture để thấy hiện trường bên dưới (tùy chọn)
             SDL_SetTextureAlphaMod(gLoseTexture.mTexture, 200);
 
             while (!End_Game) {
@@ -966,22 +963,20 @@ int main(int argc, char* argv[]) {
                         End_Game = true;
                         Play_Again = false;
                     }
-                    if (HandleAgainButton(&e, AgainButton, gClick)) { // Nút "Again" được nhấn xuống
+                    if (HandleAgainButton(&e, AgainButton, gClick)) {
                         obstacles.clear();
                         resetGame(player, obstacles, spikes, powerUps, running, isJumping, obstacleSpeed, currentGroundLevel);
                         End_Game = true; // Thoát vòng lặp để bắt đầu lại
                     }
                 }
 
-                // Render từ texture trung gian, thêm lớp mới
-                SDL_RenderCopy(gRenderer, gameStateTexture, NULL, NULL); // Hiện trường gốc
-                gLoseTexture.Render(0, 0, gRenderer); // Màn hình "Game Over" phủ lên
+                SDL_RenderCopy(gRenderer, gameStateTexture, NULL, NULL);
+                gLoseTexture.Render(0, 0, gRenderer);
                 SDL_Rect* currentClip_Again = &gAgainButton[AgainButton.currentSprite];
                 AgainButton.Render(currentClip_Again, gRenderer, gAgainButtonTexture); // Nút "Again"
                 SDL_RenderPresent(gRenderer);
             }
 
-            // Khôi phục độ mờ về mặc định sau khi thoát vòng lặp
             SDL_SetTextureAlphaMod(gLoseTexture.mTexture, 255);
         }
     }
