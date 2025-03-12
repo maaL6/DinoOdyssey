@@ -11,6 +11,7 @@
 
 using namespace std;
 
+int counttloop = 0;
 // Constants
 const SDL_Color COLOR_RED = {255, 0, 0, 255};
 const SDL_Color COLOR_BLACK = {0, 0, 0, 255};
@@ -355,26 +356,26 @@ bool LoadMedia() {
                 gHeart[i].h = 60;
             }
         }
-        if (!gPauseButtonTexture.LoadFromFile("imgs/button/big_button/pause_button.png", gRenderer)) {
+        if (!gPauseButtonTexture.LoadFromFile("images/pause.png", gRenderer)) {
             cout << "Failed to load pause_button image " << endl;
             success = false;
         } else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
-                gPauseButton[i].x = 22 * i;
+                gPauseButton[i].x = 60 * i;
                 gPauseButton[i].y = 0;
-                gPauseButton[i].w = 22;
-                gPauseButton[i].h = 34;
+                gPauseButton[i].w = 60;
+                gPauseButton[i].h = 60;
             }
         }
-        if (!gContinueButtonTexture.LoadFromFile("imgs/button/big_button/continue_button.png", gRenderer)) {
+        if (!gContinueButtonTexture.LoadFromFile("images/continue.png", gRenderer)) {
             cout << "Failed to load continue_button image " << endl;
             success = false;
         } else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
-                gContinueButton[i].x = 22 * i;
+                gContinueButton[i].x = 60 * i;
                 gContinueButton[i].y = 0;
-                gContinueButton[i].w = 22;
-                gContinueButton[i].h = 34;
+                gContinueButton[i].w = 60;
+                gContinueButton[i].h = 60;
             }
         }
         for (int i = 0; i < BACKGROUND_LAYER; ++i) {
@@ -556,6 +557,17 @@ int main(int argc, char* argv[]) {
     vector<Bullet> bullets;
     vector<GameObject> powerUps;
 
+    vector <double> layer_speed;
+        layer_speed.push_back(LAYER_1_SPEED);
+        layer_speed.push_back(LAYER_2_SPEED);
+        layer_speed.push_back(LAYER_3_SPEED);
+        layer_speed.push_back(LAYER_4_SPEED);
+        layer_speed.push_back(LAYER_5_SPEED);
+        layer_speed.push_back(LAYER_6_SPEED);
+        layer_speed.push_back(LAYER_7_SPEED);
+        layer_speed.push_back(LAYER_8_SPEED);
+        layer_speed.push_back(LAYER_9_SPEED);
+
     PlayButton.SetInteract(29, 23, 120, 40);
     HelpButton.SetInteract(29, 23, 120, 40);
     ExitButton.SetInteract(29, 23, 120, 40);
@@ -563,6 +575,8 @@ int main(int argc, char* argv[]) {
     AgainButton.SetInteract(30, 25, 120, 40);
     SettingButton.SetInteract(15, 15, 30, 30);
     MenuButton.SetInteract(15, 15, 30, 30);
+    PauseButton.SetInteract(22, 18, 15, 25);
+    ContinueButton.SetInteract(20, 19, 23, 22);
 
     int currentFrame = 0;
     int frameDelay = 200;
@@ -625,11 +639,12 @@ int main(int argc, char* argv[]) {
     }
 
     // Game Loop
+
     while (Play_Again) {
         srand(time(NULL));
-        int time = 0;
-        int score = 0;
-        int acceleration = 0;
+        //int time = 0;
+        //int score = 0;
+        //int acceleration = 0;
         int frame_Character = 0;
         string highscore = GetHighScoreFromFile("high_score.txt");
 
@@ -645,18 +660,20 @@ int main(int argc, char* argv[]) {
         bool Game_State = true;
 
         while (!Quit) {
-            if (Game_State) {
-                // Phần xử lý sự kiện và cập nhật logic
-                SDL_Event e;
-                UpdateGameTimeAndScore(time, acceleration, score);
-                while (SDL_PollEvent(&e) != 0) {
-                    if (e.type == SDL_QUIT) {
-                        running = false;
-                        Quit = true;
-                        Play_Again = false;
-                    }
-                    HandlePauseButton(&e, gRenderer, gContinueButton, PauseButton, ContinueButton,
-                                      gContinueButtonTexture, Game_State, gClick);
+            // Event process
+            SDL_Event e;
+            //UpdateGameTimeAndScore(time, acceleration, score);
+            while (SDL_PollEvent(&e) != 0) {
+                if (e.type == SDL_QUIT) {
+                    running = false;
+                    Quit = true;
+                    Play_Again = false;
+                }
+                // Event process: Pause
+                HandlePauseButton(&e, gRenderer, gContinueButton, PauseButton, ContinueButton,
+                                  gContinueButtonTexture, Game_State, gClick);
+                // When not pause
+                if (Game_State) {
                     if (e.type == SDL_KEYDOWN) {
                         if (e.key.keysym.sym == SDLK_SPACE && !isJumping) {
                             isJumping = true;
@@ -676,7 +693,10 @@ int main(int argc, char* argv[]) {
                         }
                     }
                 }
+            }
 
+            // Phần cập nhật logic game (chỉ khi không tạm dừng)
+            if (Game_State) {
                 int obstacleWidth = 3000 + (rand() % 500);
                 currentGroundLevel = (currentGroundLevel == GROUND_LEVEL_LOW) ? GROUND_LEVEL_HIGH : GROUND_LEVEL_LOW;
                 int newPlatformX = lastPlatformX + (rand() % MAX_PLATFORM_GAP) + 200;
@@ -812,10 +832,11 @@ int main(int argc, char* argv[]) {
                     REMAINING_HEARTS = 0;
                     Mix_PauseMusic();
                     Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
-                    UpdateHighScore("high_score.txt", score, highscore);
+                    //UpdateHighScore("high_score.txt", score, highscore);
                     Quit = true;
 
-                    // Lưu hiện trường vào texture trung gian
+                    //  texture trung gian
+
                     if (gameStateTexture) SDL_DestroyTexture(gameStateTexture);
                     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
                                                0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
@@ -838,68 +859,94 @@ int main(int argc, char* argv[]) {
                 player.y_velocity += GRAVITY;
                 player.collisionRect.y += player.y_velocity; // Cập nhật va chạm trước
                 player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y; // Render thấp hơn
+            }
 
-                // Phần render
-                SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-                SDL_RenderClear(gRenderer);
-                RenderScrollingBackground(OffsetSpeed_Bkgr, gBackgroundTexture, gRenderer);
-                //RenderScrollingGround(OffsetSpeed_Ground, acceleration, gGroundTexture, gRenderer);
+            // Phần render (luôn render toàn bộ cảnh game, thêm nút Continue khi tạm dừng)
+            SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+            SDL_RenderClear(gRenderer);
 
-                for (auto& obstacle : obstacles) {
-                    SDL_RenderCopy(gRenderer, groundTexture, NULL, &obstacle.rect);
-                }
-
-                SDL_Rect srcRect = {0, 0, 15, 15};
-                for (const auto& spike : spikes) {
-                    /*
-                    SDL_Rect destRect = spike.rect;
-                    destRect.w = SPIKE_SIZE;
-                    destRect.h = SPIKE_SIZE;
-                    destRect.x = spike.rect.x + (spike.rect.w - SPIKE_SIZE) / 2;
-                    destRect.y = spike.rect.y + (spike.rect.h - SPIKE_SIZE) / 2;
-                    */
-                    //spike.rect.y += 25;
-                    if (spike.type == 0) {
-                        //destRect.y += 25;
-                        SDL_RenderCopy(gRenderer, spikeTexture, nullptr, &spike.rect);
-                        //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
-
-                    } else {
-                        SDL_RenderCopy(gRenderer, robotTexture, nullptr, &spike.rect);
-                        //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
+            //RenderScrollingBackground
+            if(Game_State) {
+                for (int i = 0; i < BACKGROUND_LAYER; ++i) {
+                    OffsetSpeed_Bkgr[i] -= layer_speed[i];
+                    if (OffsetSpeed_Bkgr[i] < -gBackgroundTexture[i].GetWidth()) {
+                        OffsetSpeed_Bkgr[i] = 0;
                     }
+                    gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i], 0, gRenderer);
+                    gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
                 }
+            } else {
 
-                for (const auto& bullet : bullets) {
-                    SDL_RenderCopy(gRenderer, bulletTexture, nullptr, &bullet.rect);
-                    //SDL_RenderDrawRect(gRenderer, &bullet.collisionRect); //Vien
+            }
+            for (int i = 0; i < BACKGROUND_LAYER; ++i) {
+                gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i], 0, gRenderer);
+                gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
+            }
+            //RenderScrollingGround(OffsetSpeed_Ground, acceleration, gGroundTexture, gRenderer);
+
+            for (auto& obstacle : obstacles) {
+                SDL_RenderCopy(gRenderer, groundTexture, NULL, &obstacle.rect);
+            }
+
+            SDL_Rect srcRect = {0, 0, 15, 15};
+            for (const auto& spike : spikes) {
+                /*
+                SDL_Rect destRect = spike.rect;
+                destRect.w = SPIKE_SIZE;
+                destRect.h = SPIKE_SIZE;
+                destRect.x = spike.rect.x + (spike.rect.w - SPIKE_SIZE) / 2;
+                destRect.y = spike.rect.y + (spike.rect.h - SPIKE_SIZE) / 2;
+                */
+                //spike.rect.y += 25;
+                if (spike.type == 0) {
+                    //destRect.y += 25;
+                    SDL_RenderCopy(gRenderer, spikeTexture, nullptr, &spike.rect);
+                    //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
+
+                } else {
+                    SDL_RenderCopy(gRenderer, robotTexture, nullptr, &spike.rect);
+                    //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
                 }
+            }
 
-                for (const auto& powerUp : powerUps) {
-                    SDL_RenderCopy(gRenderer, powerUpTexture, nullptr, &powerUp.rect);
-                    //SDL_RenderDrawRect(gRenderer, &powerUp.collisionRect);
-                }
+            for (const auto& bullet : bullets) {
+                SDL_RenderCopy(gRenderer, bulletTexture, nullptr, &bullet.rect);
+                //SDL_RenderDrawRect(gRenderer, &bullet.collisionRect); //Vien
+            }
 
+            for (const auto& powerUp : powerUps) {
+                SDL_RenderCopy(gRenderer, powerUpTexture, nullptr, &powerUp.rect);
+                //SDL_RenderDrawRect(gRenderer, &powerUp.collisionRect);
+            }
+
+            if (Game_State) {
                 SDL_Rect* currentClip_Pause = &gPauseButton[PauseButton.currentSprite];
                 PauseButton.Render(currentClip_Pause, gRenderer, gPauseButtonTexture);
-                DrawPlayerScore(gText1Texture, gScoreTexture, textColor, gRenderer, gFont, score);
-                DrawPlayerHighScore(gText2Texture, gHighScoreTexture, textColor, gRenderer, gFont, highscore);
-                gHeartTexture.Render(200, 0, gRenderer, &gHeart[REMAINING_HEARTS]);
-
-                if (currentTime - lastFrameTime >= frameDelay_character) {
-                    currentFrame = (currentFrame + 1) % 4;
-                    lastFrameTime = currentTime;
-                }
-
-                SDL_Rect* currentClip_Character = &gCharacterClips[currentFrame];
-                SDL_RenderCopy(gRenderer, gCharacterTexture.mTexture, currentClip_Character, &player.rect);
-
-                // Thêm viền cho player.collisionRect (màu xanh lá để dễ nhìn)
-                SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255); // Màu xanh lá
-                //SDL_RenderDrawRect(gRenderer, &player.collisionRect);
-
-                SDL_RenderPresent(gRenderer);
+            } else {
+                SDL_Rect* currentClip_Continue = &gContinueButton[ContinueButton.currentSprite];
+                ContinueButton.Render(currentClip_Continue, gRenderer, gContinueButtonTexture);
             }
+
+            //DrawPlayerScore(gText1Texture, gScoreTexture, textColor, gRenderer, gFont, score);
+            //DrawPlayerHighScore(gText2Texture, gHighScoreTexture, textColor, gRenderer, gFont, highscore);
+            gHeartTexture.Render(200, 0, gRenderer, &gHeart[REMAINING_HEARTS]);
+
+            Uint32 currentTime = SDL_GetTicks();
+            if (Game_State && currentTime - lastFrameTime >= frameDelay_character) {
+                currentFrame = (currentFrame + 1) % 4;
+                lastFrameTime = currentTime;
+            }
+
+            SDL_Rect* currentClip_Character = &gCharacterClips[currentFrame];
+            SDL_RenderCopy(gRenderer, gCharacterTexture.mTexture, currentClip_Character, &player.rect);
+
+            // Thêm viền cho player.collisionRect (màu xanh lá để dễ nhìn)
+            SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255); // Màu xanh lá
+            //SDL_RenderDrawRect(gRenderer, &player.collisionRect);
+
+            SDL_RenderPresent(gRenderer);
+            //counttloop++;
+            //cout<<counttloop;
         }
 
         // End Game Loop
@@ -908,7 +955,6 @@ int main(int argc, char* argv[]) {
             bool End_Game = false;
             SDL_Event e;
 
-            // Đặt vị trí nút "Again" ở giữa màn hình thua
             //AgainButton.SetInteract(SCREEN_WIDTH / 2 - 87, SCREEN_HEIGHT / 2 + 50, 175, 90);
 
             // Giảm độ mờ của gLoseTexture để thấy hiện trường bên dưới (tùy chọn)
