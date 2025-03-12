@@ -293,81 +293,93 @@ void HandleMenuButton(SDL_Event* e,
 	}
 }
 
-void HandleContinueButton(Button ContinueButton,
-	LTexture gContinueButtonTexture,
-	SDL_Event* e,
-	SDL_Renderer* gRenderer,
-	SDL_Rect(&gContinueButton)[BUTTON_TOTAL],
-	bool& Game_State,
-	Mix_Chunk* gClick)
+void HandleContinueButton(Button& ContinueButton,  
+                          LTexture gContinueButtonTexture,
+                          SDL_Event* e,
+                          SDL_Renderer* gRenderer,
+                          SDL_Rect(&gContinueButton)[BUTTON_TOTAL],
+                          bool& Game_State,
+                          Mix_Chunk* gClick)
 {
-	bool Back_To_Game = false;
-	while (!Back_To_Game)
-	{
-		do
-		{
-			if (ContinueButton.IsInside(e, SMALL_BUTTON))
-			{
-				switch (e->type)
-				{
-				case SDL_MOUSEMOTION:
-					ContinueButton.currentSprite = BUTTON_MOUSE_OVER;
-					break;
-				case SDL_MOUSEBUTTONDOWN:
-				{
-					ContinueButton.currentSprite = BUTTON_MOUSE_OVER;
-					Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
-					Mix_ResumeMusic();
-					Game_State = true;
-					Back_To_Game = true;
-				}
-				break;
-				}
-			}
-			else
-			{
-				ContinueButton.currentSprite = BUTTON_MOUSE_OUT;
-			}
+    if (ContinueButton.IsInside2(e, SMALL_BUTTON))
+    {
+        switch (e->type)
+        {
+        case SDL_MOUSEMOTION:
+            ContinueButton.currentSprite = BUTTON_MOUSE_OVER;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            ContinueButton.currentSprite = BUTTON_MOUSE_OVER;
+            Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
+            Mix_ResumeMusic();
+            Game_State = true; 
+            break;
+        }
+    }
+    else
+    {
+        ContinueButton.currentSprite = BUTTON_MOUSE_OUT;
+    }
 
-			SDL_Rect* currentClip_Continue = &gContinueButton[ContinueButton.currentSprite];
-			ContinueButton.Render(currentClip_Continue, gRenderer, gContinueButtonTexture);
-
-			SDL_RenderPresent(gRenderer);
-		} while (SDL_WaitEvent(e) != 0 && e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEMOTION);
-	}
+    SDL_Rect* currentClip_Continue = &gContinueButton[ContinueButton.currentSprite];
+    ContinueButton.Render(currentClip_Continue, gRenderer, gContinueButtonTexture);
 }
 
 void HandlePauseButton(SDL_Event* e,
-	SDL_Renderer* gRenderer,
-	SDL_Rect (&gContinueButton)[BUTTON_TOTAL],
-	Button& PauseButton,
-	Button ContinueButton,
-	LTexture gContinueButtonTexture,
-	bool &Game_State,
-	Mix_Chunk *gClick)
+                       SDL_Renderer* gRenderer,
+                       SDL_Rect (&gContinueButton)[BUTTON_TOTAL],  
+                       Button& PauseButton,
+                       Button& ContinueButton,  
+                       LTexture gContinueButtonTexture,
+                       bool &Game_State,
+                       Mix_Chunk *gClick)
 {
-	if (PauseButton.IsInside(e, SMALL_BUTTON))
-	{
-		switch (e->type)
-		{
-		case SDL_MOUSEMOTION:
-			PauseButton.currentSprite = BUTTON_MOUSE_OVER;
-			break;
-		case SDL_MOUSEBUTTONDOWN:
-			PauseButton.currentSprite = BUTTON_MOUSE_OVER;
-			Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
-			Mix_PauseMusic();
-			break;
-		case SDL_MOUSEBUTTONUP:
-			Game_State = false;
-			HandleContinueButton(ContinueButton, gContinueButtonTexture, e, gRenderer, gContinueButton, Game_State, gClick);
-			break;
-		}
-	}
-	else
-	{
-		PauseButton.currentSprite = BUTTON_MOUSE_OUT;
-	}
+    if (Game_State)
+    {
+        if (PauseButton.IsInside2(e, SMALL_BUTTON))
+        {
+            switch (e->type)
+            {
+            case SDL_MOUSEMOTION:
+                PauseButton.currentSprite = BUTTON_MOUSE_OVER;
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                PauseButton.currentSprite = BUTTON_MOUSE_OVER;
+                Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
+                Mix_PauseMusic();
+                Game_State = false; // Tạm dừng game
+                break;
+            }
+        }
+        else
+        {
+            PauseButton.currentSprite = BUTTON_MOUSE_OUT;
+        }
+    }
+    // Xử lý nút Continue khi game đang tạm dừng
+    else
+    {
+        HandleContinueButton(ContinueButton, gContinueButtonTexture, e, gRenderer, gContinueButton, Game_State, gClick);
+    }
+}
+
+bool HandleAgainButton(SDL_Event* e, Button& AgainButton, Mix_Chunk* gClick) {
+    bool clicked = false;
+    if (AgainButton.IsInside2(e, COMMON_BUTTON)) {
+        switch (e->type) {
+        case SDL_MOUSEMOTION:
+            AgainButton.currentSprite = BUTTON_MOUSE_OVER;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            AgainButton.currentSprite = BUTTON_MOUSE_OVER;
+            Mix_PlayChannel(-1, gClick, 0); // Phát âm thanh khi nhấn
+            clicked = true; // Báo rằng nút đã được nhấn
+            break;
+        }
+    } else {
+        AgainButton.currentSprite = BUTTON_MOUSE_OUT;
+    }
+    return clicked; // Trả về true nếu nút được nhấn xuống
 }
 
 void GenerateEnemy(Enemy& enemy1,
@@ -494,6 +506,7 @@ void ControlCharFrame(int &frame)
 	{
 		frame = 0;
 	}
+	//int RUNNING_FRAMES = 0;
 }
 
 void ControlEnemyFrame(int &frame)
