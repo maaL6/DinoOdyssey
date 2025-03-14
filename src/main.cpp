@@ -1,4 +1,6 @@
+//#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
+//#include <SDL2/SDL_main.h>
 #include <iostream>
 #include <vector>
 #include <cstdlib>
@@ -11,7 +13,6 @@
 
 using namespace std;
 
-int counttloop = 0;
 // Constants
 const SDL_Color COLOR_RED = {255, 0, 0, 255};
 const SDL_Color COLOR_BLACK = {0, 0, 0, 255};
@@ -33,18 +34,26 @@ const int BULLET_SIZE = 50;
 const float BULLET_SPEED = 5.0f;
 const int BULLET_RANGE = 200;
 const float POWERUP_PROBABILITY = 0.9f;
-const int POWERUP_SIZE = 40;
+const int POWERUP_SIZE = 120;
 const int MAX_BULLETS = 5;
-const int RENDER_OFFSET_Y = -23; 
+const int RENDER_OFFSET_Y = -23;
 const int ROBOT_SIZE = 70;
 const int POISON_SIZE = 70;
 const int ROBOT_COLLISION_SIZE = 50;
 const int POSION_COLLISION_SIZE = 45;
+const Uint32 SCORE_INTERVAL = 500;
+
+
+const int SLIDER_START_X = 60;
+const int SLIDER_END_X = 60 + 170;
+const int SLIDER_Y = 465;
+const int KNOB_SIZE = 40;
+
 
 // Global Variables
+int skinNumber = 1;
+int counttloop = 0;
 int REMAINING_HEARTS = 3;
-//int SPIKE_SIZE = 70;
-//int COLLISION_SPIKE_SIZE = 50;
 int bulletCount = 0;
 int currentGroundLevel = GROUND_LEVEL_LOW;
 bool isOnGround = false;
@@ -52,7 +61,6 @@ bool collided = true;
 bool running = true;
 bool isJumping = false;
 float obstacleSpeed = 5.0f;
-const Uint32 SCORE_INTERVAL = 500;
 Uint32 obstacleTimer = SDL_GetTicks();
 Uint32 animationTimer = SDL_GetTicks();
 
@@ -62,12 +70,16 @@ SDL_Texture* spike2SheetTexture = nullptr;
 SDL_Texture* bulletTexture = nullptr;
 SDL_Texture* powerUpTexture = nullptr;
 SDL_Texture* robotTexture = nullptr;
-SDL_Texture* gameStateTexture = nullptr; 
+SDL_Texture* gameStateTexture = nullptr;
+SDL_Texture* glowTexture = nullptr;
+SDL_Texture* loseTexture = nullptr;
+SDL_Texture* sliderTexture = nullptr;
+SDL_Texture* knobTexture = nullptr;
 
 // Structures
 struct GameObject {
-    SDL_Rect rect;         
-    SDL_Rect collisionRect; 
+    SDL_Rect rect;          // Dùng để render
+    SDL_Rect collisionRect; // Dùng để check va chạm
     SDL_Color color;
     float x_velocity;
     float y_velocity;
@@ -77,8 +89,8 @@ struct GameObject {
 };
 
 struct Bullet {
-    SDL_Rect rect;         
-    SDL_Rect collisionRect; 
+    SDL_Rect rect;          // Dùng để render
+    SDL_Rect collisionRect; // Dùng để check va chạm
     float x_velocity;
     float y_velocity;
     float startX;
@@ -120,8 +132,8 @@ void resetGame(GameObject& player, vector<GameObject>& obstacles, vector<GameObj
     initialPlatform.y_velocity = 0;
     obstacles.push_back(initialPlatform);
 
-    player.rect = {200 + RENDER_OFFSET_Y, currentGroundLevel - 100 + RENDER_OFFSET_Y, PLAYER_SIZE, PLAYER_SIZE}; 
-    player.collisionRect = {200, currentGroundLevel - 100, PLAYER_COLLISION_SIZE, PLAYER_COLLISION_SIZE}; 
+    player.rect = {200 + RENDER_OFFSET_Y, currentGroundLevel - 100 + RENDER_OFFSET_Y, PLAYER_SIZE, PLAYER_SIZE};
+    player.collisionRect = {200, currentGroundLevel - 100, PLAYER_COLLISION_SIZE, PLAYER_COLLISION_SIZE};
     player.x_velocity = 0;
     player.y_velocity = 0;
     REMAINING_HEARTS = 3;
@@ -172,7 +184,7 @@ bool Init() {
 bool LoadMedia() {
     bool success = true;
 
-    gMusic = Mix_LoadMUS("sound/bkgr_audio.wav");
+    gMusic = Mix_LoadMUS("sound/loop.mp3");
     if (!gMusic) {
         LogError("Failed to load background music", MIX_ERROR);
         success = false;
@@ -207,26 +219,12 @@ bool LoadMedia() {
         LogError("Failed to load font", MIX_ERROR);
         success = false;
     } else {
-        if (!gText1Texture.LoadFromRenderedText("Your score: ", gFont, textColor, gRenderer)) {
-            cout << "Failed to render text1 texture" << endl;
-            success = false;
-        }
-        if (!gText2Texture.LoadFromRenderedText("High score: ", gFont, textColor, gRenderer)) {
-            cout << "Failed to render text2 texture" << endl;
-            success = false;
-        }
-        if (!gMenuTexture.LoadFromFile("images/bgg.png", gRenderer)) {
-            cout << "Failed to load menu image" << endl;
-            success = false;
-        }
-        if (!gInstructionTexture.LoadFromFile("imgs/background/instruction.png", gRenderer)) {
-            cout << "Failed to load instruction image" << endl;
-            success = false;
-        }
-        if (!gPlayButtonTexture.LoadFromFile("images/play.png", gRenderer)) {
-            cout << "Failed to load play_button image" << endl;
-            success = false;
-        } else {
+        if (!gText1Texture.LoadFromRenderedText("Your score: ", gFont, textColor, gRenderer)) success = false;
+        if (!gText2Texture.LoadFromRenderedText("High score: ", gFont, textColor, gRenderer)) success = false;
+        if (!gMenuTexture.LoadFromFile("images/bgg.png", gRenderer)) success = false;
+        if (!gInstructionTexture.LoadFromFile("imgs/background/instruction.png", gRenderer)) success = false;
+        if (!gPlayButtonTexture.LoadFromFile("images/play.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gPlayButton[i].x = 175 * i;
                 gPlayButton[i].y = 0;
@@ -234,10 +232,8 @@ bool LoadMedia() {
                 gPlayButton[i].h = 90;
             }
         }
-        if (!gHelpButtonTexture.LoadFromFile("images/help.png", gRenderer)) {
-            cout << "Failed to load help_button image" << endl;
-            success = false;
-        } else {
+        if (!gHelpButtonTexture.LoadFromFile("images/help.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gHelpButton[i].x = 175 * i;
                 gHelpButton[i].y = 0;
@@ -245,10 +241,8 @@ bool LoadMedia() {
                 gHelpButton[i].h = 90;
             }
         }
-        if (!gBackButtonTexture.LoadFromFile("imgs/button/big_button/back_button.png", gRenderer)) {
-            cout << "Failed to load back_button image" << endl;
-            success = false;
-        } else {
+        if (!gBackButtonTexture.LoadFromFile("imgs/button/big_button/back_button.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gBackButton[i].x = 100 * i;
                 gBackButton[i].y = 0;
@@ -256,10 +250,8 @@ bool LoadMedia() {
                 gBackButton[i].h = 78;
             }
         }
-        if (!gExitButtonTexture.LoadFromFile("images/quit.png", gRenderer)) {
-            cout << "Failed to load quit image" << endl;
-            success = false;
-        } else {
+        if (!gExitButtonTexture.LoadFromFile("images/quit.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gExitButton[i].x = 175 * i;
                 gExitButton[i].y = 0;
@@ -267,10 +259,8 @@ bool LoadMedia() {
                 gExitButton[i].h = 90;
             }
         }
-        if (!gAgainButtonTexture.LoadFromFile("images/again.png", gRenderer)) {
-            cout << "Failed to load again image" << endl;
-            success = false;
-        } else {
+        if (!gAgainButtonTexture.LoadFromFile("images/again.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gAgainButton[i].x = 175 * i;
                 gAgainButton[i].y = 0;
@@ -278,22 +268,11 @@ bool LoadMedia() {
                 gAgainButton[i].h = 90;
             }
         }
-        if (!gNameTexture.LoadFromFile("images/name.png", gRenderer)) {
-            cout << "Failed to load name.png" << endl;
-            success = false;
-        }
-        if (!gVineTexture.LoadFromFile("images/leo.png", gRenderer)) {
-            cout << "Failed to load leo.png" << endl;
-            success = false;
-        }
-        if (!gTransTexture.LoadFromFile("images/trans.png", gRenderer)) {
-            cout << "Failed to load trans.png" << endl;
-            success = false;
-        }
-        if (!gMenuButtonTexture.LoadFromFile("images/menu.png", gRenderer)) {
-            cout << "Failed to load menu.png" << endl;
-            success = false;
-        } else {
+        if (!gNameTexture.LoadFromFile("images/name.png", gRenderer)) success = false;
+        if (!gVineTexture.LoadFromFile("images/leo.png", gRenderer)) success = false;
+        if (!gTransTexture.LoadFromFile("images/trans.png", gRenderer)) success = false;
+        if (!gMenuButtonTexture.LoadFromFile("images/menu.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gMenuButton[i].x = 60 * i;
                 gMenuButton[i].y = 0;
@@ -301,10 +280,8 @@ bool LoadMedia() {
                 gMenuButton[i].h = 60;
             }
         }
-        if (!gCloseButtonTexture.LoadFromFile("images/close.png", gRenderer)) {
-            cout << "Failed to load close.png" << endl;
-            success = false;
-        } else {
+        if (!gCloseButtonTexture.LoadFromFile("images/close.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gCloseButton[i].x = 60 * i;
                 gCloseButton[i].y = 0;
@@ -312,10 +289,8 @@ bool LoadMedia() {
                 gCloseButton[i].h = 60;
             }
         }
-        if (!gSettingButtonTexture.LoadFromFile("images/setting.png", gRenderer)) {
-            cout << "Failed to load setting.png" << endl;
-            success = false;
-        } else {
+        if (!gSettingButtonTexture.LoadFromFile("images/setting.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gSettingButton[i].x = 60 * i;
                 gSettingButton[i].y = 0;
@@ -323,10 +298,8 @@ bool LoadMedia() {
                 gSettingButton[i].h = 60;
             }
         }
-        if (!gSoundOnButtonTexture.LoadFromFile("images/sound_on.png", gRenderer)) {
-            cout << "Failed to load sound_on.png" << endl;
-            success = false;
-        } else {
+        if (!gSoundOnButtonTexture.LoadFromFile("images/sound_on.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gSoundOnButton[i].x = 60 * i;
                 gSoundOnButton[i].y = 0;
@@ -334,10 +307,8 @@ bool LoadMedia() {
                 gSoundOnButton[i].h = 60;
             }
         }
-        if (!gLabtubeTexture.LoadFromFile("images/labtube.png", gRenderer)) {
-            cout << "Failed to load labtube.png " << endl;
-            success = false;
-        } else {
+        if (!gLabtubeTexture.LoadFromFile("images/labtube.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < 3; ++i) {
                 gLabtube[i].x = 800 * i;
                 gLabtube[i].y = 0;
@@ -345,10 +316,8 @@ bool LoadMedia() {
                 gLabtube[i].h = 500;
             }
         }
-        if (!gHeartTexture.LoadFromFile("images/heart.png", gRenderer)) {
-            cout << "Failed to load heart.png " << endl;
-            success = false;
-        } else {
+        if (!gHeartTexture.LoadFromFile("images/heart.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < 4; ++i) {
                 gHeart[i].x = 140 * i;
                 gHeart[i].y = 0;
@@ -356,10 +325,8 @@ bool LoadMedia() {
                 gHeart[i].h = 60;
             }
         }
-        if (!gPauseButtonTexture.LoadFromFile("images/pause.png", gRenderer)) {
-            cout << "Failed to load pause_button image " << endl;
-            success = false;
-        } else {
+        if (!gPauseButtonTexture.LoadFromFile("images/pause.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gPauseButton[i].x = 60 * i;
                 gPauseButton[i].y = 0;
@@ -367,10 +334,8 @@ bool LoadMedia() {
                 gPauseButton[i].h = 60;
             }
         }
-        if (!gContinueButtonTexture.LoadFromFile("images/continue.png", gRenderer)) {
-            cout << "Failed to load continue_button image " << endl;
-            success = false;
-        } else {
+        if (!gContinueButtonTexture.LoadFromFile("images/continue.png", gRenderer)) success = false;
+        else {
             for (int i = 0; i < BUTTON_TOTAL; ++i) {
                 gContinueButton[i].x = 60 * i;
                 gContinueButton[i].y = 0;
@@ -379,19 +344,17 @@ bool LoadMedia() {
             }
         }
         for (int i = 0; i < BACKGROUND_LAYER; ++i) {
-            if (!gBackgroundTexture[i].LoadFromFile(LAYER[i].c_str(), gRenderer)) {
-                cout << "Failed to load background image" << endl;
-                success = false;
-            }
+            if (!gBackgroundTexture[i].LoadFromFile(LAYER[i].c_str(), gRenderer)) success = false;
         }
-        if (!gGroundTexture.LoadFromFile("imgs/background/ground.png", gRenderer)) {
-            cout << "Failed to load ground image" << endl;
+        if (!gGroundTexture.LoadFromFile("imgs/background/ground.png", gRenderer)) success = false;
+
+        if (!gCharacterTexture[0].LoadFromFile("images/default_dino.png", gRenderer)
+                ||  !gCharacterTexture[1].LoadFromFile("images/arcane_dino.png", gRenderer)
+                ||  !gCharacterTexture[2].LoadFromFile("images/blue_dino.png", gRenderer)
+                ||  !gCharacterTexture[3].LoadFromFile("images/purple_dino.png", gRenderer)
+                ||  !gCharacterTexture[4].LoadFromFile("images/grey_dino.png", gRenderer))
             success = false;
-        }
-        if (!gCharacterTexture.LoadFromFile("images/dinono.png", gRenderer)) {
-            cout << "Failed to load character_run image." << endl;
-            success = false;
-        } else {
+        else {
             for (int i = 0; i < 4; ++i) {
                 gCharacterClips[i].x = 258 * i;
                 gCharacterClips[i].y = 0;
@@ -399,96 +362,129 @@ bool LoadMedia() {
                 gCharacterClips[i].h = 281;
             }
         }
-        if (!gLoseTexture.LoadFromFile("imgs/background/lose.png", gRenderer)) {
-            cout << "Failed to load lose image." << endl;
-            success = false;
-        }
 
         SDL_Surface* groundSurface = IMG_Load("ground.png");
-        if (!groundSurface) {
-            cerr << "Failed to load ground.png! SDL_image Error: " << IMG_GetError() << endl;
-            success = false;
-        } else {
+        if (!groundSurface) success = false;
+        else {
             groundTexture = SDL_CreateTextureFromSurface(gRenderer, groundSurface);
             SDL_FreeSurface(groundSurface);
-            if (!groundTexture) {
-                cerr << "Failed to create texture from ground.png! SDL_Error: " << SDL_GetError() << endl;
-                success = false;
-            }
+            if (!groundTexture) success = false;
         }
 
         SDL_Surface* spikeSurface = IMG_Load("spike.png");
-        if (!spikeSurface) {
-            cerr << "Failed to load spike.png! IMG_Error: " << IMG_GetError() << endl;
-            success = false;
-        } else {
+        if (!spikeSurface) success = false;
+        else {
             spikeTexture = SDL_CreateTextureFromSurface(gRenderer, spikeSurface);
             SDL_FreeSurface(spikeSurface);
-            if (!spikeTexture) {
-                cerr << "Failed to create texture from spike.png! SDL_Error: " << SDL_GetError() << endl;
-                success = false;
-            }
+            if (!spikeTexture) success = false;
         }
 
         SDL_Surface* spike2SheetSurface = IMG_Load("spike2_sheet.png");
-        if (!spike2SheetSurface) {
-            cerr << "Failed to load spike2_sheet.png! IMG_Error: " << IMG_GetError() << endl;
-            success = false;
-        } else {
+        if (!spike2SheetSurface) success = false;
+        else {
             spike2SheetTexture = SDL_CreateTextureFromSurface(gRenderer, spike2SheetSurface);
             SDL_FreeSurface(spike2SheetSurface);
-            if (!spike2SheetTexture) {
-                cerr << "Failed to create texture from spike2_sheet.png! SDL_Error: " << SDL_GetError() << endl;
-                success = false;
-            }
+            if (!spike2SheetTexture) success = false;
         }
 
         SDL_Surface* robotSurface = IMG_Load("robot2.png");
-        if (!robotSurface) {
-            cerr << "Failed to load robot.png! IMG_Error: " << IMG_GetError() << endl;
-            success = false;
-        } else {
+        if (!robotSurface) success = false;
+        else {
             robotTexture = SDL_CreateTextureFromSurface(gRenderer, robotSurface);
             SDL_FreeSurface(robotSurface);
-            if (!robotTexture) {
-                cerr << "Failed to create texture from robot.png! SDL_Error: " << SDL_GetError() << endl;
-                success = false;
-            }
+            if (!robotTexture) success = false;
         }
 
         SDL_Surface* bulletSurface = IMG_Load("images/bullet.png");
-        if (!bulletSurface) {
-            cerr << "Failed to load bullet.png! IMG_Error: " << IMG_GetError() << endl;
-            success = false;
-        } else {
+        if (!bulletSurface) success = false;
+        else {
             bulletTexture = SDL_CreateTextureFromSurface(gRenderer, bulletSurface);
             SDL_FreeSurface(bulletSurface);
-            if (!bulletTexture) {
-                cerr << "Failed to create texture from bullet.png! SDL_Error: " << SDL_GetError() << endl;
-                success = false;
-            }
+            if (!bulletTexture) success = false;
         }
 
         SDL_Surface* powerUpSurface = IMG_Load("images/buff.png");
-        if (!powerUpSurface) {
-            cerr << "Failed to load buff.png! IMG_Error: " << IMG_GetError() << endl;
-            success = false;
-        } else {
+        if (!powerUpSurface) success = false;
+        else {
             powerUpTexture = SDL_CreateTextureFromSurface(gRenderer, powerUpSurface);
             SDL_FreeSurface(powerUpSurface);
-            if (!powerUpTexture) {
-                cerr << "Failed to create texture from buff.png! SDL_Error: " << SDL_GetError() << endl;
-                success = false;
-            }
+            if (!powerUpTexture) success = false;
+        }
+
+        SDL_Surface* glowSurface = IMG_Load("images/glow.png");
+        if (!glowSurface) success = false;
+        else {
+            glowTexture = SDL_CreateTextureFromSurface(gRenderer, glowSurface);
+            SDL_FreeSurface(glowSurface);
+            if (!glowTexture) success = false;
+        }
+
+        if (!gGlowTexture.LoadFromFile("images/glow.png", gRenderer)) success = false;
+
+        SDL_Surface* loseSurface = IMG_Load("images/GAME OVER.png");
+        if (!loseSurface) success = false;
+        else {
+            loseTexture = SDL_CreateTextureFromSurface(gRenderer, loseSurface);
+            SDL_FreeSurface(loseSurface);
+            if (!loseTexture) success = false;
+        }
+
+        if (!gLoseTexture.LoadFromFile("images/GAME OVER.png", gRenderer)) success = false;
+    }
+    SDL_Surface* sliderSurface = IMG_Load("images/slider.png");
+    if (!sliderSurface) {
+        LogError("Failed to load slider image", IMG_ERROR);
+        success = false;
+    } else {
+        sliderTexture = SDL_CreateTextureFromSurface(gRenderer, sliderSurface);
+        SDL_FreeSurface(sliderSurface);
+        if (!sliderTexture) {
+            LogError("Failed to create slider texture", SDL_ERROR);
+            success = false;
         }
     }
+
+    SDL_Surface* knobSurface = IMG_Load("images/knob.png");
+    if (!knobSurface) {
+        LogError("Failed to load knob image", IMG_ERROR);
+        success = false;
+    } else {
+        knobTexture = SDL_CreateTextureFromSurface(gRenderer, knobSurface);
+        SDL_FreeSurface(knobSurface);
+        if (!knobTexture) {
+            LogError("Failed to create knob texture", SDL_ERROR);
+            success = false;
+        }
+    }
+
+    if (!gSoundOnButtonTexture.LoadFromFile("images/sound_on.png", gRenderer)) success = false;
+        else {
+            for (int i = 0; i < BUTTON_TOTAL; ++i) {
+                gSoundOnButton[i].x = 60 * i;
+                gSoundOnButton[i].y = 0;
+                gSoundOnButton[i].w = 60;
+                gSoundOnButton[i].h = 60;
+            }
+        }
+
+    if (!gSoundOffButtonTexture.LoadFromFile("images/sound_off.png", gRenderer)) success = false;
+        else {
+            for (int i = 0; i < BUTTON_TOTAL; ++i) {
+                gSoundOffButton[i].x = 60 * i;
+                gSoundOffButton[i].y = 0;
+                gSoundOffButton[i].w = 60;
+                gSoundOffButton[i].h = 60;
+            }
+        }
+
     return success;
 }
 
 void Close() {
     gMenuTexture.Free();
     gInstructionTexture.Free();
-    gCharacterTexture.Free();
+    for(int i = 0 ; i < 5 ; i++)
+        gCharacterTexture[i].Free();
     gGroundTexture.Free();
     gPlayButtonTexture.Free();
     gHelpButtonTexture.Free();
@@ -532,7 +528,7 @@ void Close() {
     SDL_DestroyTexture(powerUpTexture);
     SDL_DestroyTexture(groundTexture);
     SDL_DestroyTexture(robotTexture);
-    SDL_DestroyTexture(gameStateTexture); // Giải phóng texture trung gian
+    SDL_DestroyTexture(gameStateTexture);
     gameStateTexture = nullptr;
 
     SDL_DestroyRenderer(gRenderer);
@@ -557,16 +553,16 @@ int main(int argc, char* argv[]) {
     vector<Bullet> bullets;
     vector<GameObject> powerUps;
 
-    vector <double> layer_speed;
-        layer_speed.push_back(LAYER_1_SPEED);
-        layer_speed.push_back(LAYER_2_SPEED);
-        layer_speed.push_back(LAYER_3_SPEED);
-        layer_speed.push_back(LAYER_4_SPEED);
-        layer_speed.push_back(LAYER_5_SPEED);
-        layer_speed.push_back(LAYER_6_SPEED);
-        layer_speed.push_back(LAYER_7_SPEED);
-        layer_speed.push_back(LAYER_8_SPEED);
-        layer_speed.push_back(LAYER_9_SPEED);
+    vector<double> layer_speed;
+    layer_speed.push_back(LAYER_1_SPEED);
+    layer_speed.push_back(LAYER_2_SPEED);
+    layer_speed.push_back(LAYER_3_SPEED);
+    layer_speed.push_back(LAYER_4_SPEED);
+    layer_speed.push_back(LAYER_5_SPEED);
+    layer_speed.push_back(LAYER_6_SPEED);
+    layer_speed.push_back(LAYER_7_SPEED);
+    layer_speed.push_back(LAYER_8_SPEED);
+    layer_speed.push_back(LAYER_9_SPEED);
 
     PlayButton.SetInteract(29, 23, 120, 40);
     HelpButton.SetInteract(29, 23, 120, 40);
@@ -577,6 +573,8 @@ int main(int argc, char* argv[]) {
     MenuButton.SetInteract(15, 15, 30, 30);
     PauseButton.SetInteract(22, 18, 15, 25);
     ContinueButton.SetInteract(20, 19, 23, 22);
+    SoundOnButton.SetInteract(15, 18, 29, 24);
+    SoundOffButton.SetInteract(15, 18, 29, 24);
 
     int currentFrame = 0;
     int frameDelay = 200;
@@ -595,9 +593,24 @@ int main(int argc, char* argv[]) {
     bool Play_Again = false;
     bool Quit_Menu = false;
     Mix_PlayMusic(gMenuMusic, IS_REPEATITIVE);
+    /*
+    int channel = Mix_PlayChannel(-1, gJump, -1);
+    if (channel == -1) {
+        std::cerr << "Failed to play sound: " << Mix_GetError() << std::endl;
+        return 1;
+    }
+    */
+    int currentX = (SLIDER_START_X + SLIDER_END_X) / 2;
+    bool isDragging = false;
+    bool quit = false;
 
     // Menu Loop
     while (!Quit_Menu) {
+
+        int volume = ((currentX - SLIDER_START_X) * MIX_MAX_VOLUME) / (SLIDER_END_X - SLIDER_START_X);
+        Mix_VolumeMusic(volume);
+        Mix_Volume(MIX_CHANNEL, volume);
+
         SDL_Event e_mouse;
         while (SDL_PollEvent(&e_mouse) != 0) {
             if (e_mouse.type == SDL_QUIT) Quit_Menu = true;
@@ -608,8 +621,33 @@ int main(int argc, char* argv[]) {
             HandleCloseButton(&e_mouse, CloseButton, Quit_Menu, gClick);
             HandleSettingButton(&e_mouse, SettingButton, gClick);
             HandleMenuButton(&e_mouse, MenuButton, gClick);
+            HandleSoundButton(&e_mouse, currentX, SoundOnButton, SoundOffButton, gClick);
+        cout << currentX << endl;
             if (Quit_Game) return 0;
+
+            else if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
+                if (e_mouse.button.button == SDL_BUTTON_LEFT) {
+                    SDL_Point mousePos = { e_mouse.button.x, e_mouse.button.y };
+                    if (mousePos.y >= SLIDER_Y - 10 &&
+                            mousePos.y <= SLIDER_Y + 10 &&
+                            mousePos.x >= SLIDER_START_X &&
+                            mousePos.x <= SLIDER_END_X) {
+                        currentX = mousePos.x;
+                        currentX = SDL_clamp(currentX, SLIDER_START_X, SLIDER_END_X);
+                        isDragging = true;
+                    }
+                }
+            } else if (e_mouse.type == SDL_MOUSEBUTTONUP) {
+                if (e_mouse.button.button == SDL_BUTTON_LEFT) {
+                    isDragging = false;
+                }
+            } else if (e_mouse.type == SDL_MOUSEMOTION) {
+                if (isDragging) {
+                    currentX = SDL_clamp(e_mouse.motion.x, SLIDER_START_X, SLIDER_END_X);
+                }
+            }
         }
+        //Chỉnh âm
 
         gMenuTexture.Render(0, 0, gRenderer);
         gTransTexture.Render(0, 0, gRenderer);
@@ -623,7 +661,13 @@ int main(int argc, char* argv[]) {
         gLabtubeTexture.Render(0, 0, gRenderer, &gLabtube[currentFrame]);
         gVineTexture.Render(0, 0, gRenderer);
         gNameTexture.Render(0, 0, gRenderer);
-
+        if(volume){
+            SDL_Rect* currentClip_SoundOn = &gSoundOnButton[SoundOnButton.currentSprite];
+            SoundOnButton.Render(currentClip_SoundOn, gRenderer, gSoundOnButtonTexture);
+        }else{
+            SDL_Rect* currentClip_SoundOff = &gSoundOffButton[SoundOffButton.currentSprite];
+            SoundOffButton.Render(currentClip_SoundOff, gRenderer, gSoundOffButtonTexture);
+        }
         SDL_Rect* currentClip_Close = &gCloseButton[CloseButton.currentSprite];
         CloseButton.Render(currentClip_Close, gRenderer, gCloseButtonTexture);
         SDL_Rect* currentClip_Setting = &gSettingButton[SettingButton.currentSprite];
@@ -635,16 +679,28 @@ int main(int argc, char* argv[]) {
         SDL_Rect* currentClip_Help = &gHelpButton[HelpButton.currentSprite];
         HelpButton.Render(currentClip_Help, gRenderer, gHelpButtonTexture);
 
+        SDL_Rect sliderRect = {
+            SLIDER_START_X,
+            SLIDER_Y - 5,
+            SLIDER_END_X - SLIDER_START_X,
+            13
+        };
+        SDL_RenderCopy(gRenderer, sliderTexture, NULL, &sliderRect);
+
+        // knob
+        SDL_Rect knobRect = {
+            currentX - KNOB_SIZE / 2,
+            SLIDER_Y - KNOB_SIZE / 2 + 2,
+            KNOB_SIZE,
+            KNOB_SIZE
+        };
+        SDL_RenderCopy(gRenderer, knobTexture, NULL, &knobRect);
+
         SDL_RenderPresent(gRenderer);
     }
-
     // Game Loop
-
     while (Play_Again) {
         srand(time(NULL));
-        //int time = 0;
-        //int score = 0;
-        //int acceleration = 0;
         int frame_Character = 0;
         string highscore = GetHighScoreFromFile("high_score.txt");
 
@@ -660,19 +716,15 @@ int main(int argc, char* argv[]) {
         bool Game_State = true;
 
         while (!Quit) {
-            // Event process
             SDL_Event e;
-            //UpdateGameTimeAndScore(time, acceleration, score);
             while (SDL_PollEvent(&e) != 0) {
                 if (e.type == SDL_QUIT) {
                     running = false;
                     Quit = true;
                     Play_Again = false;
                 }
-                // Event process: Pause
                 HandlePauseButton(&e, gRenderer, gContinueButton, PauseButton, ContinueButton,
                                   gContinueButtonTexture, Game_State, gClick);
-                // When not pause
                 if (Game_State) {
                     if (e.type == SDL_KEYDOWN) {
                         if (e.key.keysym.sym == SDLK_SPACE && !isJumping) {
@@ -715,15 +767,14 @@ int main(int argc, char* argv[]) {
                     for (int i = 1; i <= numSpikes; ++i) {
                         GameObject spike;
                         spike.type = (rand() % 2);
-                        if(spike.type == 1) { //robot
-                            int randomRobotHeight = rand()%100;
+                        if (spike.type == 1) { // robot
+                            int randomRobotHeight = rand() % 100;
                             spike.rect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2 - 10, currentGroundLevel - ROBOT_SIZE - randomRobotHeight, ROBOT_SIZE, ROBOT_SIZE};
                             spike.collisionRect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2, currentGroundLevel - ROBOT_SIZE + 20 - randomRobotHeight, ROBOT_COLLISION_SIZE, ROBOT_COLLISION_SIZE};
-                        } else { //poison
+                        } else { // poison
                             spike.rect = {newPlatformX + i * spikeSpacing - POISON_SIZE / 2, currentGroundLevel - POISON_SIZE + 25, POISON_SIZE, POISON_SIZE};
                             spike.collisionRect = {newPlatformX + i * spikeSpacing - POISON_SIZE / 2 + 15, currentGroundLevel - POISON_SIZE + 35, POSION_COLLISION_SIZE, POSION_COLLISION_SIZE};
                         }
-
                         spike.x_velocity = -obstacleSpeed;
                         spike.y_velocity = 0;
                         spike.isLethal = true;
@@ -787,8 +838,8 @@ int main(int argc, char* argv[]) {
                     if (checkAABBCollision(player.collisionRect, obstacle.collisionRect)) {
                         collided = false;
                         if (player.y_velocity >= 0) {
-                            player.collisionRect.y = obstacle.collisionRect.y - player.collisionRect.h; // Cập nhật va chạm
-                            player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y; // Render thấp hơn
+                            player.collisionRect.y = obstacle.collisionRect.y - player.collisionRect.h;
+                            player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y;
                             player.y_velocity = 0;
                             isJumping = false;
                             isOnGround = true;
@@ -831,9 +882,10 @@ int main(int argc, char* argv[]) {
                     REMAINING_HEARTS = 0;
                     Mix_PauseMusic();
                     Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
-                    //UpdateHighScore("high_score.txt", score, highscore);
                     Quit = true;
 
+                    gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
+                    SDL_RenderPresent(gRenderer);
 
                     if (gameStateTexture) SDL_DestroyTexture(gameStateTexture);
                     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
@@ -844,6 +896,8 @@ int main(int argc, char* argv[]) {
                 }
 
                 if (!REMAINING_HEARTS) {
+                    gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
+                    SDL_RenderPresent(gRenderer);
                     if (gameStateTexture) SDL_DestroyTexture(gameStateTexture);
                     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
                                                0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
@@ -855,16 +909,14 @@ int main(int argc, char* argv[]) {
                 ControlCharFrame(frame_Character);
 
                 player.y_velocity += GRAVITY;
-                player.collisionRect.y += player.y_velocity; 
-                player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y; 
+                player.collisionRect.y += player.y_velocity;
+                player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y;
             }
 
-          
             SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
             SDL_RenderClear(gRenderer);
 
-            //RenderScrollingBackground
-            if(Game_State) {
+            if (Game_State) {
                 for (int i = 0; i < BACKGROUND_LAYER; ++i) {
                     OffsetSpeed_Bkgr[i] -= layer_speed[i];
                     if (OffsetSpeed_Bkgr[i] < -gBackgroundTexture[i].GetWidth()) {
@@ -873,14 +925,12 @@ int main(int argc, char* argv[]) {
                     gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i], 0, gRenderer);
                     gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
                 }
-            } else {
-
             }
+
             for (int i = 0; i < BACKGROUND_LAYER; ++i) {
                 gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i], 0, gRenderer);
                 gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
             }
-            //RenderScrollingGround(OffsetSpeed_Ground, acceleration, gGroundTexture, gRenderer);
 
             for (auto& obstacle : obstacles) {
                 SDL_RenderCopy(gRenderer, groundTexture, NULL, &obstacle.rect);
@@ -888,33 +938,19 @@ int main(int argc, char* argv[]) {
 
             SDL_Rect srcRect = {0, 0, 15, 15};
             for (const auto& spike : spikes) {
-                /*
-                SDL_Rect destRect = spike.rect;
-                destRect.w = SPIKE_SIZE;
-                destRect.h = SPIKE_SIZE;
-                destRect.x = spike.rect.x + (spike.rect.w - SPIKE_SIZE) / 2;
-                destRect.y = spike.rect.y + (spike.rect.h - SPIKE_SIZE) / 2;
-                */
-                //spike.rect.y += 25;
                 if (spike.type == 0) {
-                    //destRect.y += 25;
                     SDL_RenderCopy(gRenderer, spikeTexture, nullptr, &spike.rect);
-                    //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
-
                 } else {
                     SDL_RenderCopy(gRenderer, robotTexture, nullptr, &spike.rect);
-                    //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
                 }
             }
 
             for (const auto& bullet : bullets) {
                 SDL_RenderCopy(gRenderer, bulletTexture, nullptr, &bullet.rect);
-                //SDL_RenderDrawRect(gRenderer, &bullet.collisionRect); //Vien
             }
 
             for (const auto& powerUp : powerUps) {
                 SDL_RenderCopy(gRenderer, powerUpTexture, nullptr, &powerUp.rect);
-                //SDL_RenderDrawRect(gRenderer, &powerUp.collisionRect);
             }
 
             if (Game_State) {
@@ -925,9 +961,7 @@ int main(int argc, char* argv[]) {
                 ContinueButton.Render(currentClip_Continue, gRenderer, gContinueButtonTexture);
             }
 
-            //DrawPlayerScore(gText1Texture, gScoreTexture, textColor, gRenderer, gFont, score);
-            //DrawPlayerHighScore(gText2Texture, gHighScoreTexture, textColor, gRenderer, gFont, highscore);
-            gHeartTexture.Render(200, 0, gRenderer, &gHeart[REMAINING_HEARTS]);
+            gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
 
             Uint32 currentTime = SDL_GetTicks();
             if (Game_State && currentTime - lastFrameTime >= frameDelay_character) {
@@ -936,26 +970,16 @@ int main(int argc, char* argv[]) {
             }
 
             SDL_Rect* currentClip_Character = &gCharacterClips[currentFrame];
-            SDL_RenderCopy(gRenderer, gCharacterTexture.mTexture, currentClip_Character, &player.rect);
+            SDL_RenderCopy(gRenderer, gCharacterTexture[skinNumber].mTexture, currentClip_Character, &player.rect);
 
-            // Thêm viền cho player.collisionRect (màu xanh lá để dễ nhìn)
-            SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255); // Màu xanh lá
-            //SDL_RenderDrawRect(gRenderer, &player.collisionRect);
-
+            SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
             SDL_RenderPresent(gRenderer);
-            //counttloop++;
-            //cout<<counttloop;
         }
 
-        // End Game Loop
         if (Play_Again) {
             REMAINING_HEARTS = 3;
             bool End_Game = false;
             SDL_Event e;
-
-            //AgainButton.SetInteract(SCREEN_WIDTH / 2 - 87, SCREEN_HEIGHT / 2 + 50, 175, 90);
-
-            SDL_SetTextureAlphaMod(gLoseTexture.mTexture, 200);
 
             while (!End_Game) {
                 while (SDL_PollEvent(&e) != 0) {
@@ -966,18 +990,22 @@ int main(int argc, char* argv[]) {
                     if (HandleAgainButton(&e, AgainButton, gClick)) {
                         obstacles.clear();
                         resetGame(player, obstacles, spikes, powerUps, running, isJumping, obstacleSpeed, currentGroundLevel);
-                        End_Game = true; // Thoát vòng lặp để bắt đầu lại
+                        End_Game = true;
+                    }
+                    if (HandleQuitButton(&e, ExitButton, gClick)) {
+                        Close();
+                        return 0;
                     }
                 }
 
                 SDL_RenderCopy(gRenderer, gameStateTexture, NULL, NULL);
                 gLoseTexture.Render(0, 0, gRenderer);
                 SDL_Rect* currentClip_Again = &gAgainButton[AgainButton.currentSprite];
-                AgainButton.Render(currentClip_Again, gRenderer, gAgainButtonTexture); // Nút "Again"
+                AgainButton.Render(currentClip_Again, gRenderer, gAgainButtonTexture);
+                SDL_Rect* currentClip_Exit = &gExitButton[ExitButton.currentSprite];
+                ExitButton.Render(currentClip_Exit, gRenderer, gExitButtonTexture);
                 SDL_RenderPresent(gRenderer);
             }
-
-            SDL_SetTextureAlphaMod(gLoseTexture.mTexture, 255);
         }
     }
 
