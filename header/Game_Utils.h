@@ -3,8 +3,6 @@
 
 #include "Game_Base.h"
 #include "Button.h"
-#include "Enemy.h"
-#include "Character.h"
 
 bool Init();
 bool LoadMedia();
@@ -62,43 +60,43 @@ void HandleMenuButton(SDL_Event* e,
     Mix_Chunk* gClick);
 
 
-void HandleContinueButton(Button ContinueButton,
+/*void HandleContinueButton(Button ContinueButton,
     LTexture gContinueButtonTexture,
     SDL_Event* e,
     SDL_Renderer* gRenderer,
     SDL_Rect(&gContinueButton)[BUTTON_TOTAL],
-    bool& Game_State, Mix_Chunk* gClick);
+    bool& Game_State, Mix_Chunk* gClick);*/
+
+void HandleContinueButton(Button& ContinueButton,  // Tham chiếu để thay đổi trực tiếp ContinueButton
+                          LTexture gContinueButtonTexture,
+                          SDL_Event* e,
+                          SDL_Renderer* gRenderer,
+                          SDL_Rect(&gContinueButton)[BUTTON_TOTAL],
+                          bool& Game_State,
+                          Mix_Chunk* gClick);
 
 void HandlePauseButton(SDL_Event* e,
-    SDL_Renderer* gRenderer,
-    SDL_Rect(&gContinueButton)[BUTTON_TOTAL],
-    Button& PauseButton,
-    Button ContinueButton,
-    LTexture gContinueButtonTexture,
-    bool& game_state,
-    Mix_Chunk* gClick);
+                       SDL_Renderer* gRenderer,
+                       SDL_Rect (&gContinueButton)[BUTTON_TOTAL],  // Tham chiếu đến mảng
+                       Button& PauseButton,
+                       Button& ContinueButton,  // Tham chiếu để thay đổi trực tiếp ContinueButton
+                       LTexture gContinueButtonTexture,
+                       bool &Game_State,
+                       Mix_Chunk *gClick);
 
-void GenerateEnemy(Enemy& enemy1,
-    Enemy& enemy2,
-    Enemy& enemy3,
-    SDL_Rect(&gEnemyClips)[FLYING_FRAMES],
-    SDL_Renderer* gRenderer);
+void HandleSoundButton(SDL_Event* e,
+                       int& currentX,
+                       Button& SoundOnButton,
+                       Button& SoundOffButton,
+                       Mix_Chunk *gClick);
 
-bool CheckColission(Character character,
-    SDL_Rect* char_clip,
-    Enemy enemy,
-    SDL_Rect* enemy_clip = nullptr);
+bool HandleAgainButton(SDL_Event* e,
+                       Button& AgainButton,
+                       Mix_Chunk* gClick);
 
-bool CheckEnemyColission(Character character,
-    Enemy enemy1,
-    Enemy enemy2,
-    Enemy enemy3,
-    SDL_Rect* char_clip,
-    SDL_Rect* enemy_clip = nullptr);
+bool HandleQuitButton(SDL_Event* e, Button& QuitButton, Mix_Chunk* gClick);
 
 void ControlCharFrame(int& frame);
-
-void ControlEnemyFrame(int& frame);
 
 void ControlLabtubeFrame(int &frame);
 
