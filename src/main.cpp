@@ -306,7 +306,7 @@ int main(int argc, char* argv[]) {
                             Mix_PlayChannel(MIX_CHANNEL, gJump, NOT_REPEATITIVE);
                             player.y_velocity = JUMP_FORCE;
                         }
-                        if (e.key.keysym.sym == SDLK_p && bulletCount > 0) {
+                        if (e.key.keysym.sym == SDLK_m && bulletCount > 0) {
                             Mix_PlayChannel(MIX_CHANNEL, gShoot, NOT_REPEATITIVE);
                             Bullet bullet;
                             bullet.rect = {player.rect.x + 20, player.rect.y + (player.rect.h - BULLET_SIZE) / 2 - 10, BULLET_SIZE, BULLET_SIZE};
@@ -440,6 +440,8 @@ int main(int argc, char* argv[]) {
                         if (checkAABBCollision(player.collisionRect, it->collisionRect)) {
                             Mix_PlayChannel(MIX_CHANNEL, gBuff, NOT_REPEATITIVE);
                             bulletCount += MAX_BULLETS;
+                            if(bulletCount > 10)
+                                bulletCount = 10;
                             //cout << "Picked up power-up" << bulletCount << " bullets" << endl;
                             it = powerUps.erase(it);
                         } else {
