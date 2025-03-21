@@ -439,7 +439,7 @@ int main(int argc, char* argv[]) {
                     } else {
                         if (checkAABBCollision(player.collisionRect, it->collisionRect)) {
                             Mix_PlayChannel(MIX_CHANNEL, gBuff, NOT_REPEATITIVE);
-                            bulletCount += MAX_BULLETS;
+                            bulletCount += addBullets;
                             if(bulletCount > 10)
                                 bulletCount = 10;
                             //cout << "Picked up power-up" << bulletCount << " bullets" << endl;
