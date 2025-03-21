@@ -3,7 +3,7 @@
 This is my first game project, developed using SDL2 and C++. It is an endless runner game based on the Google Chrome Dinosaur game, enhanced with additional features and mechanics to expand the gameplay experience.
 
 ## Overview
-The game involves a player character running continuously across platforms, avoiding obstacles, and collecting power-ups. The objective is to achieve the highest score possible while the difficulty increases over time. It incorporates elements such as multiple ground levels, shooting mechanics, and customizable skins.
+The game involves a player character running continuously across platforms, avoiding obstacles, and collecting power-ups. The objective is to achieve the highest score possible while the difficulty increases over time (currently the difficulty is fixed). It incorporates elements such as multiple ground levels, shooting mechanics, and customizable skins.
 
 ## Authors
 - **Fully developed by** [me](https://github.com/maaL6)
