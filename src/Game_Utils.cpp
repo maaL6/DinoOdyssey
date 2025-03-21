@@ -106,7 +106,7 @@ void HandleNextPageButton(SDL_Event* e,
         case SDL_MOUSEBUTTONDOWN:
             if(pageNumber < 3)
                 pageNumber++;
-            std::cout<<pageNumber;
+            //std::cout<<pageNumber;
             Mix_PlayChannel(MIX_CHANNEL, gClick, 0);
             NextPageButton.currentSprite = BUTTON_MOUSE_OVER;
             break;
