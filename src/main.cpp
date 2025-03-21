@@ -836,7 +836,7 @@ bool LoadMedia() {
             }
         }
 
-        if (!gBackPageButtonTexture.LoadFromFile("images/back.png", gRenderer)) success = false;
+        if (!gBackPageButtonTexture.LoadFromFile("images/button/back.png", gRenderer)) success = false;
         else {
             gBackPageButton[0].x = 60;
             gBackPageButton[0].y = 0;
