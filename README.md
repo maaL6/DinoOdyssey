@@ -20,7 +20,7 @@ The game involves a player character running continuously across platforms, avoi
 ## Gameplay Mechanics
 - **Controls**:
   - `Space`: Jump to avoid obstacles or gaps.
-  - `P`: Shoot bullets when power-ups are active.
+  - `M`: Shoot bullets when power-ups are active.
   - `Pause/Continue`: Toggle between paused and active states.
 - **Obstacles**:
   - Spikes and robots reduce player health on collision.
