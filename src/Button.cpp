@@ -102,10 +102,18 @@ bool Button::IsInside2(SDL_Event *e, int size)
 		{
 			inside = false;
 		}
-        std::cout << x << " " << y << "\n";
+        //std::cout << x << " " << y << "\n";
 		return inside;
 	}
 	return false;
+}
+
+int Button::GetX(){
+    return position.x;
+}
+
+int Button::GetY(){
+    return position.y;
 }
 
 void Button::Render(SDL_Rect* currentClip, SDL_Renderer* gRenderer, LTexture gButtonTexture)

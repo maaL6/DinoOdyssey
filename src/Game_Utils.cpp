@@ -1,87 +1,48 @@
 #include "Game_Utils.h"
 
-std::string GetHighScoreFromFile(std::string path) {
-    std::fstream HighScoreFile;
-    std::string highscore;
+int GetHighScoreFromFile(const std::string& path) {
+    FILE* file = fopen(path.c_str(), "r");
+    int highscore = 0;
 
-    HighScoreFile.open(path, std::ios::in);
-    HighScoreFile >> highscore;
-
+    if (file) {
+        char buffer[16] = {0};
+        if (fgets(buffer, sizeof(buffer), file) != nullptr) {
+            try {
+                highscore = std::stoi(std::string(buffer));
+            } catch (const std::exception& e) {
+                highscore = 0;
+            }
+        }
+        fclose(file);
+    } else {
+        file = fopen(path.c_str(), "w");
+        if (file) {
+            fprintf(file, "0");
+            fclose(file);
+        }
+    }
     return highscore;
 }
 
-void UpdateHighScore(std::string path,
-                     const int& score,
-                     const std::string& old_high_score) {
-    int oldHighScore = 0;
-    std::fstream HighScoreFile;
-    std::string newHighScore;
-    std::stringstream ConvertToInt(old_high_score);
-
-    HighScoreFile.open(path, std::ios::out);
-
-    ConvertToInt >> oldHighScore;
-    if (score > oldHighScore) {
-        oldHighScore = score;
+void UpdateHighScore(const std::string& path, int score, int old_high_score) {
+    if (score > old_high_score) {
+        FILE* file = fopen(path.c_str(), "w");
+        if (file) {
+            fprintf(file, "%d", score);
+            fclose(file);
+        }
     }
-    newHighScore = std::to_string(oldHighScore);
-
-    HighScoreFile << newHighScore;
 }
 
-int UpdateGameTimeAndScore(int& time,
-                           int& speed,
-                           int& score) {
-    if (time == TIME_MAX) {
-        speed += SPEED_INCREASEMENT;
-    }
-
+int UpdateGameTimeAndScore(int& time, int& score) {
     if (time > TIME_MAX) {
         time = 0;
     }
-    if (time % 5 == 0) {
+    if (time % 7 == 0) {
         score += SCORE_INCREASEMENT;
     }
-
     time += TIME_INCREASEMENT;
-
     return time;
-}
-
-void RenderScrollingBackground(std::vector <double>& offsetSpeed,
-                               LTexture(&gBackgroundTexture)[BACKGROUND_LAYER],
-                               SDL_Renderer* gRenderer) {
-    std::vector <double> layer_speed;
-    layer_speed.push_back(LAYER_1_SPEED);
-    layer_speed.push_back(LAYER_2_SPEED);
-    layer_speed.push_back(LAYER_3_SPEED);
-    layer_speed.push_back(LAYER_4_SPEED);
-    layer_speed.push_back(LAYER_5_SPEED);
-    layer_speed.push_back(LAYER_6_SPEED);
-    layer_speed.push_back(LAYER_7_SPEED);
-    layer_speed.push_back(LAYER_8_SPEED);
-    layer_speed.push_back(LAYER_9_SPEED);
-
-    for (int i = 0; i < BACKGROUND_LAYER; ++i) {
-        offsetSpeed[i] -= layer_speed[i];
-        if (offsetSpeed[i] < -gBackgroundTexture[i].GetWidth()) {
-            offsetSpeed[i] = 0;
-        }
-        gBackgroundTexture[i].Render(offsetSpeed[i], 0, gRenderer);
-        gBackgroundTexture[i].Render(offsetSpeed[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
-    }
-}
-
-void RenderScrollingGround(int& speed,
-                           const int acceleration,
-                           LTexture gGroundTexture,
-                           SDL_Renderer* gRenderer) {
-    speed -= GROUND_SPEED + acceleration;
-    if (speed < -gGroundTexture.GetWidth()) {
-        speed = 0;
-    }
-    gGroundTexture.Render(speed, 0, gRenderer);
-    gGroundTexture.Render(speed + gGroundTexture.GetWidth(), 0, gRenderer);
 }
 
 void HandlePlayButton(SDL_Event* e,
@@ -110,15 +71,12 @@ void HandlePlayButton(SDL_Event* e,
     }
 }
 
-void HandleHelpButton(SDL_Event* e,
-                      SDL_Rect(&gBackButton)[BUTTON_TOTAL],
+bool HandleHelpButton(SDL_Event* e,
                       Button& HelpButton,
-                      Button& BackButton,
-                      LTexture gInstructionTexture,
-                      LTexture gBackButtonTexture,
                       SDL_Renderer *gRenderer,
                       bool &Quit_game,
                       Mix_Chunk *gClick) {
+    bool clicked = false;
     if (HelpButton.IsInside2(e, COMMON_BUTTON)) {
         switch (e->type) {
         case SDL_MOUSEMOTION:
@@ -126,44 +84,81 @@ void HandleHelpButton(SDL_Event* e,
             break;
         case SDL_MOUSEBUTTONDOWN:
             HelpButton.currentSprite = BUTTON_MOUSE_OVER;
-            Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
-
-            bool ReadDone = false;
-            while (!ReadDone) {
-                do {
-                    if (e->type == SDL_QUIT) {
-                        ReadDone = true;
-                        Quit_game = true;
-                        Close();
-                    }
-
-                    else if (BackButton.IsInside(e, COMMON_BUTTON)) {
-                        switch (e->type) {
-                        case SDL_MOUSEMOTION:
-                            BackButton.currentSprite = BUTTON_MOUSE_OVER;
-                            break;
-                        case SDL_MOUSEBUTTONDOWN:
-                            BackButton.currentSprite = BUTTON_MOUSE_OVER;
-                            Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
-                            ReadDone = true;
-                            break;
-                        }
-                    } else {
-                        BackButton.currentSprite = BUTTON_MOUSE_OUT;
-                    }
-
-                    gInstructionTexture.Render(0, 0, gRenderer);
-
-                    SDL_Rect* currentClip_Back = &gBackButton[BackButton.currentSprite];
-                    BackButton.Render(currentClip_Back, gRenderer, gBackButtonTexture);
-
-                    SDL_RenderPresent(gRenderer);
-                } while (SDL_PollEvent(e) != 0 && e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEMOTION);
-            }
+            Mix_PlayChannel(-1, gClick, 0);
+            clicked = true;
             break;
         }
     } else {
         HelpButton.currentSprite = BUTTON_MOUSE_OUT;
+    }
+    return clicked;
+}
+
+void HandleNextPageButton(SDL_Event* e,
+                      Button& NextPageButton,
+                      int& pageNumber,
+                      Mix_Chunk* gClick) {
+    if (NextPageButton.IsInside2(e, COMMON_BUTTON)) {
+        switch (e->type) {
+        case SDL_MOUSEMOTION:
+            NextPageButton.currentSprite = BUTTON_MOUSE_OVER;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            if(pageNumber < 3)
+                pageNumber++;
+            std::cout<<pageNumber;
+            Mix_PlayChannel(MIX_CHANNEL, gClick, 0);
+            NextPageButton.currentSprite = BUTTON_MOUSE_OVER;
+            break;
+        }
+    } else {
+        NextPageButton.currentSprite = BUTTON_MOUSE_OUT;
+    }
+}
+
+void HandleExitHelpButton(SDL_Event* e,
+                      Button& NextPageButton,
+                      bool& Quit_Menu,
+                      bool& Quit_Instruction,
+                      bool& Play_Again,
+                      Mix_Chunk* gClick) {
+    if (NextPageButton.IsInside2(e, COMMON_BUTTON)) {
+        switch (e->type) {
+        case SDL_MOUSEMOTION:
+            NextPageButton.currentSprite = BUTTON_MOUSE_OVER;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            Quit_Menu = false;
+            Quit_Instruction = true;
+            Play_Again = false;
+            Mix_PlayChannel(MIX_CHANNEL, gClick, 0);
+            NextPageButton.currentSprite = BUTTON_MOUSE_OVER;
+            break;
+        }
+    } else {
+        NextPageButton.currentSprite = BUTTON_MOUSE_OUT;
+    }
+}
+
+void HandleBackButton(SDL_Event* e,
+                      Button& NextPageButton,
+                      int& pageNumber,
+                      Mix_Chunk* gClick) {
+    if (NextPageButton.IsInside2(e, COMMON_BUTTON)) {
+        switch (e->type) {
+        case SDL_MOUSEMOTION:
+            NextPageButton.currentSprite = BUTTON_MOUSE_OVER;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            if(pageNumber > 0)
+                pageNumber--;
+            std::cout<<pageNumber;
+            Mix_PlayChannel(MIX_CHANNEL, gClick, 0);
+            NextPageButton.currentSprite = BUTTON_MOUSE_OVER;
+            break;
+        }
+    } else {
+        NextPageButton.currentSprite = BUTTON_MOUSE_OUT;
     }
 }
 
@@ -207,9 +202,10 @@ void HandleCloseButton(SDL_Event* e,
     }
 }
 
-void HandleSettingButton(SDL_Event* e,
+bool HandleSettingButton(SDL_Event* e,
                          Button& SettingButton,
                          Mix_Chunk* gClick) {
+    bool clicked = false;
     if (SettingButton.IsInside2(e, COMMON_BUTTON)) {
         switch (e->type) {
         case SDL_MOUSEMOTION:
@@ -217,12 +213,14 @@ void HandleSettingButton(SDL_Event* e,
             break;
         case SDL_MOUSEBUTTONDOWN:
             SettingButton.currentSprite = BUTTON_MOUSE_OVER;
-            //Them lenh
+            Mix_PlayChannel(-1, gClick, 0); // Phát âm thanh khi nhấn
+            clicked = true; // Báo rằng nút đã được nhấn
             break;
         }
     } else {
         SettingButton.currentSprite = BUTTON_MOUSE_OUT;
     }
+    return clicked;
 }
 
 void HandleMenuButton(SDL_Event* e,
@@ -288,13 +286,14 @@ void HandlePauseButton(SDL_Event* e,
                 PauseButton.currentSprite = BUTTON_MOUSE_OVER;
                 Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
                 Mix_PauseMusic();
-                Game_State = false; 
+                Game_State = false; // Tạm dừng game
                 break;
             }
         } else {
             PauseButton.currentSprite = BUTTON_MOUSE_OUT;
         }
     }
+    // Xử lý nút Continue khi game đang tạm dừng
     else {
         HandleContinueButton(ContinueButton, gContinueButtonTexture, e, gRenderer, gContinueButton, Game_State, gClick);
     }
@@ -315,6 +314,7 @@ void HandleSoundButton(SDL_Event* e,
                 SoundOnButton.currentSprite = BUTTON_MOUSE_OVER;
                 Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
                 currentX = 60;
+                //Game_State = false; // Tạm dừng game
                 break;
             }
         } else {
@@ -330,6 +330,7 @@ void HandleSoundButton(SDL_Event* e,
                 SoundOffButton.currentSprite = BUTTON_MOUSE_OVER;
                 Mix_PlayChannel(MIX_CHANNEL, gClick, NOT_REPEATITIVE);
                 currentX = 150;
+                //Game_State = false; // Tạm dừng game
                 break;
             }
         } else {
@@ -348,14 +349,14 @@ bool HandleAgainButton(SDL_Event* e, Button& AgainButton, Mix_Chunk* gClick) {
             break;
         case SDL_MOUSEBUTTONDOWN:
             AgainButton.currentSprite = BUTTON_MOUSE_OVER;
-            Mix_PlayChannel(-1, gClick, 0); 
-            clicked = true; 
+            Mix_PlayChannel(-1, gClick, 0); // Phát âm thanh khi nhấn
+            clicked = true; // Báo rằng nút đã được nhấn
             break;
         }
     } else {
         AgainButton.currentSprite = BUTTON_MOUSE_OUT;
     }
-    return clicked; 
+    return clicked; // Trả về true nếu nút được nhấn xuống
 }
 
 bool HandleQuitButton(SDL_Event* e, Button& QuitButton, Mix_Chunk* gClick) {
@@ -367,38 +368,15 @@ bool HandleQuitButton(SDL_Event* e, Button& QuitButton, Mix_Chunk* gClick) {
             break;
         case SDL_MOUSEBUTTONDOWN:
             QuitButton.currentSprite = BUTTON_MOUSE_OVER;
-            Mix_PlayChannel(-1, gClick, 0); 
-            clicked = true; 
+            Mix_PlayChannel(-1, gClick, 0); // Phát âm thanh khi nhấn
+            clicked = true; // Báo rằng nút đã được nhấn
             break;
         }
     } else {
         QuitButton.currentSprite = BUTTON_MOUSE_OUT;
     }
-    return clicked; 
+    return clicked; // Trả về true nếu nút được nhấn xuống
 }
-
-void ControlCharFrame(int &frame) {
-    frame += FRAME_INCREASEMENT;
-    if (frame / SLOW_FRAME_CHAR >= RUNNING_FRAMES) {
-        frame = 0;
-    }
-    //int RUNNING_FRAMES = 0;
-}
-
-void ControlEnemyFrame(int &frame) {
-    frame += FRAME_INCREASEMENT;
-    if (frame / SLOW_FRAME_ENEMY >= FLYING_FRAMES) {
-        frame = 0;
-    }
-}
-
-void ControlLabtubeFrame(int &frame) {
-    frame += FRAME_INCREASEMENT;
-    if (frame / 10 >= 3) {
-        frame = 0;
-    }
-}
-
 
 void DrawPlayerScore(LTexture gTextTexture,
                      LTexture gScoreTexture,
@@ -406,9 +384,21 @@ void DrawPlayerScore(LTexture gTextTexture,
                      SDL_Renderer *gRenderer,
                      TTF_Font *gFont,
                      const int& score) {
-    gTextTexture.Render(TEXT_1_POSX, TEXT_1_POSY, gRenderer);
+    //gTextTexture.Render(TEXT_1_POSX, TEXT_1_POSY, gRenderer);
     if (gScoreTexture.LoadFromRenderedText(std::to_string(score), gFont, textColor, gRenderer)) {
         gScoreTexture.Render(SCORE_POSX, SCORE_POSY, gRenderer);
+    }
+}
+
+void DrawBullet(LTexture gTextTexture,
+                     LTexture gScoreTexture,
+                     SDL_Color textColor,
+                     SDL_Renderer *gRenderer,
+                     TTF_Font *gFont,
+                     const int& score) {
+    gTextTexture.Render(BULLET_POSX, BULLET_POSY, gRenderer);
+    if (gScoreTexture.LoadFromRenderedText(std::to_string(score), gFont, textColor, gRenderer)) {
+        gScoreTexture.Render(BULLET_COUNT_POSX, BULLET_COUNT_POSY, gRenderer);
     }
 }
 
@@ -417,42 +407,25 @@ void DrawPlayerHighScore(LTexture gTextTexture,
                          SDL_Color textColor,
                          SDL_Renderer* gRenderer,
                          TTF_Font* gFont,
-                         const std::string& HighScore) {
-    gTextTexture.Render(TEXT_2_POSX, TEXT_2_POSY, gRenderer);
+                         int highscore) {
+    //gTextTexture.Render(TEXT_2_POSX, TEXT_2_POSY, gRenderer);
+    std::string HighScore = std::to_string(highscore);
+    HighScore = "/" + HighScore;
     if (gHighScoreTexture.LoadFromRenderedText(HighScore, gFont, textColor, gRenderer)) {
         gHighScoreTexture.Render(HIGH_SCORE_POSX, HIGH_SCORE_POSY, gRenderer);
     }
 }
 
-void DrawEndGameSelection(LTexture gLoseTexture,
-                          SDL_Event *e,
-                          SDL_Renderer *gRenderer,
-                          bool &Play_Again) {
-    if (Play_Again) {
-        bool End_Game = false;
-        while (!End_Game) {
-            while (SDL_PollEvent(e) != 0) {
-                if (e->type == SDL_QUIT) {
-                    Play_Again = false;
-                }
+bool isMouseInRect(SDL_Event *e, SDL_Rect rect) {
 
-                if (e->type == SDL_KEYDOWN) {
-                    switch (e->key.keysym.sym) {
-                    case SDLK_SPACE:
-                        //resetGame(player, obstacles, running, isJumping, obstacleSpeed, currentGroundLevel);
-                        End_Game = true;
-                        break;
-                    case SDLK_ESCAPE:
-                        End_Game = true;
-                        Play_Again = false;
-                        break;
-                    }
-                }
-            }
+    int mouseX = e->motion.x;
+    int mouseY = e->motion.y;
 
-            gLoseTexture.Render(0, 0, gRenderer);
-
-            SDL_RenderPresent(gRenderer);
-        }
+    if (mouseX >= rect.x &&
+        mouseX <= rect.x + rect.w &&
+        mouseY >= rect.y &&
+        mouseY <= rect.y + rect.h) {
+        return 1;
     }
+    return 0;
 }
