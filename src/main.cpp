@@ -394,6 +394,7 @@ int main(int argc, char* argv[]) {
                         if (spikeIt->type == 1 && checkAABBCollision(it->collisionRect, spikeIt->collisionRect)) {
                             spikeIt = spikes.erase(spikeIt);
                             hitSpike2 = true;
+                            score += 200;
                             break;
                         } else ++spikeIt;
                     }
