@@ -1,4 +1,4 @@
-# Endless Runner Game
+# Dino_Odyssey
 
 This is my first game project, developed using SDL2 and C++. It is an endless runner game based on the Google Chrome Dinosaur game, enhanced with additional features and mechanics to expand the gameplay experience.
 
