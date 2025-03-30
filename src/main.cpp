@@ -1,4 +1,5 @@
 //#define SDL_MAIN_HANDLED
+//#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <vector>
@@ -13,6 +14,8 @@
 
 using namespace std;
 
+
+// Reset game
 void resetGame(GameObject& player, vector<GameObject>& obstacles, vector<GameObject>& spikes, vector<GameObject>& powerUps,
                bool& running, bool& isJumping, float& obstacleSpeed, int& currentGroundLevel) {
     obstacleSpeed = beginningObstacleSpeed;
@@ -51,6 +54,7 @@ int main(int argc, char* argv[]) {
     vector<Bullet> bullets;
     vector<GameObject> powerUps;
 
+    //Set Background layer speed
     vector<double> layer_speed;
     layer_speed.push_back(LAYER_1_SPEED);
     layer_speed.push_back(LAYER_2_SPEED);
@@ -62,6 +66,7 @@ int main(int argc, char* argv[]) {
     layer_speed.push_back(LAYER_8_SPEED);
     layer_speed.push_back(LAYER_9_SPEED);
 
+    // Set interact area of buttons
     PlayButton.SetInteract(29, 23, 120, 40);
     HelpButton.SetInteract(29, 23, 120, 40);
     ExitButton.SetInteract(29, 23, 120, 40);
@@ -83,6 +88,7 @@ int main(int argc, char* argv[]) {
     int frameDelay_character = 75;
     Uint32 lastFrameTime = SDL_GetTicks();
 
+    //Init and Load Media
     if (!Init()) {
         printf("Failed to initialize!\n");
         return 1;
@@ -103,497 +109,525 @@ int main(int argc, char* argv[]) {
     int currentX = (SLIDER_START_X + SLIDER_END_X) / 2;
     bool isDragging = false;
     //Game Loop
-    while(!Quit_Game){
-    // Menu Loop
-    while (!Quit_Menu) {
-        int volume = ((currentX - SLIDER_START_X) * MIX_MAX_VOLUME) / (SLIDER_END_X - SLIDER_START_X);
-        Mix_VolumeMusic(volume);
-        Mix_Volume(MIX_CHANNEL, volume);
+    while(!Quit_Game) {
+        // Menu Loop
+        while (!Quit_Menu) {
+            //Sound (1)
+            int volume = ((currentX - SLIDER_START_X) * MIX_MAX_VOLUME) / (SLIDER_END_X - SLIDER_START_X);
+            Mix_VolumeMusic(volume);
+            Mix_Volume(MIX_CHANNEL, volume);
 
-        SDL_Event e_mouse;
-        while (SDL_PollEvent(&e_mouse) != 0) {
-            if (e_mouse.type == SDL_QUIT) Quit_Game = true;
-            bool Quit_Game = false;
-            HandlePlayButton(&e_mouse, PlayButton, Quit_Menu, Play_Again, gClick);
-            HandleCloseButton(&e_mouse, CloseButton, Quit_Game, gClick);
-            if(HandleHelpButton(&e_mouse, HelpButton, gRenderer, Quit_Game, gClick)) {
-                //cout << "TRUE" << endl;
-                Quit_Menu = true;
-                Quit_Instruction = false;
-                Play_Again = true;
-            }
-            if (HandleSettingButton(&e_mouse, SettingButton, gClick)) {
-                Quit_Menu = true;
-                Quit_skinSelector = false;
-                Play_Again = true;
-            }
-            HandleMenuButton(&e_mouse, MenuButton, gClick);
-            HandleSoundButton(&e_mouse, currentX, SoundOnButton, SoundOffButton, gClick);
-            if (Quit_Game) return 0;
-
-            else if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
-                if (e_mouse.button.button == SDL_BUTTON_LEFT) {
-                    SDL_Point mousePos = { e_mouse.button.x, e_mouse.button.y };
-                    if (mousePos.y >= SLIDER_Y - 10 &&
-                            mousePos.y <= SLIDER_Y + 10 &&
-                            mousePos.x >= SLIDER_START_X &&
-                            mousePos.x <= SLIDER_END_X) {
-                        currentX = mousePos.x;
-                        currentX = SDL_clamp(currentX, SLIDER_START_X, SLIDER_END_X);
-                        isDragging = true;
-                    }
+            //Handle Button
+            SDL_Event e_mouse;
+            while (SDL_PollEvent(&e_mouse) != 0) {
+                if (e_mouse.type == SDL_QUIT) Quit_Game = true;
+                bool Quit_Game = false;
+                HandlePlayButton(&e_mouse, PlayButton, Quit_Menu, Play_Again, gClick);
+                HandleCloseButton(&e_mouse, CloseButton, Quit_Game, gClick);
+                if(HandleHelpButton(&e_mouse, HelpButton, gRenderer, Quit_Game, gClick)) {
+                    //cout << "TRUE" << endl;
+                    Quit_Menu = true;
+                    Quit_Instruction = false;
+                    Play_Again = true;
                 }
-            } else if (e_mouse.type == SDL_MOUSEBUTTONUP) {
-                if (e_mouse.button.button == SDL_BUTTON_LEFT) {
-                    isDragging = false;
+                if (HandleSettingButton(&e_mouse, SettingButton, gClick)) {
+                    Quit_Menu = true;
+                    Quit_skinSelector = false;
+                    Play_Again = true;
                 }
-            } else if (e_mouse.type == SDL_MOUSEMOTION) {
-                if (isDragging) {
-                    currentX = SDL_clamp(e_mouse.motion.x, SLIDER_START_X, SLIDER_END_X);
-                }
-            }
-        }
+                //HandleMenuButton(&e_mouse, MenuButton, gClick);
+                HandleSoundButton(&e_mouse, currentX, SoundOnButton, SoundOffButton, gClick);
+                if (Quit_Game) return 0;
 
-        gMenuTexture.Render(0, 0, gRenderer);
-        gTransTexture.Render(0, 0, gRenderer);
-
-        Uint32 currentTime = SDL_GetTicks();
-        if (currentTime - lastFrameTime >= frameDelay) {
-            currentFrame = (currentFrame + 1) % 3;
-            lastFrameTime = currentTime;
-        }
-        gLabtubeTexture.Render(0, 0, gRenderer, &gLabtube[currentFrame]);
-        gVineTexture.Render(0, 0, gRenderer);
-        gNameTexture.Render(0, 0, gRenderer);
-        if (volume) {
-            SDL_Rect* currentClip_SoundOn = &gSoundOnButton[SoundOnButton.currentSprite];
-            SoundOnButton.Render(currentClip_SoundOn, gRenderer, gSoundOnButtonTexture);
-        } else {
-            SDL_Rect* currentClip_SoundOff = &gSoundOffButton[SoundOffButton.currentSprite];
-            SoundOffButton.Render(currentClip_SoundOff, gRenderer, gSoundOffButtonTexture);
-        }
-
-        SDL_Rect* currentClip_Close = &gCloseButton[CloseButton.currentSprite];
-        CloseButton.Render(currentClip_Close, gRenderer, gCloseButtonTexture);
-        SDL_Rect* currentClip_Setting = &gSettingButton[SettingButton.currentSprite];
-        SettingButton.Render(currentClip_Setting, gRenderer, gSettingButtonTexture);
-        SDL_Rect* currentClip_Menu = &gMenuButton[MenuButton.currentSprite];
-        MenuButton.Render(currentClip_Menu, gRenderer, gMenuButtonTexture);
-        SDL_Rect* currentClip_Play = &gPlayButton[PlayButton.currentSprite];
-        PlayButton.Render(currentClip_Play, gRenderer, gPlayButtonTexture);
-        SDL_Rect* currentClip_Help = &gHelpButton[HelpButton.currentSprite];
-        HelpButton.Render(currentClip_Help, gRenderer, gHelpButtonTexture);
-
-        SDL_Rect sliderRect = {SLIDER_START_X, SLIDER_Y - 5, SLIDER_END_X - SLIDER_START_X, 13};
-        SDL_RenderCopy(gRenderer, sliderTexture, NULL, &sliderRect);
-
-        SDL_Rect knobRect = {currentX - KNOB_SIZE / 2, SLIDER_Y - KNOB_SIZE / 2 + 2, KNOB_SIZE, KNOB_SIZE};
-        SDL_RenderCopy(gRenderer, knobTexture, NULL, &knobRect);
-        //SDL_Rect test = {0,0,600,600};
-        //gExitButtonTexture.Render(0,0,gRenderer,&test);
-        SDL_RenderPresent(gRenderer);
-    }
-
-    //Instruction
-    int pageNumber = 0;
-    while(!Quit_Instruction) {
-        SDL_Event e_mouse;
-        while (SDL_PollEvent(&e_mouse) != 0) {
-            HandleNextPageButton(&e_mouse, NextPageButton, pageNumber, gClick);
-            HandleBackButton(&e_mouse, BackPageButton, pageNumber, gClick);
-            HandleExitHelpButton(&e_mouse, ExitHelpButton, Quit_Menu, Quit_Instruction, Play_Again, gClick);
-        }
-
-        gHelpTexture[pageNumber].Render(0, 0, gRenderer);
-
-        SDL_Rect* currentClip_NextPage = &gNextPageButton[NextPageButton.currentSprite];
-        NextPageButton.Render(currentClip_NextPage, gRenderer, gNextPageButtonTexture);
-
-        SDL_Rect* currentClip_BackPage = &gBackPageButton[BackPageButton.currentSprite];
-        BackPageButton.Render(currentClip_BackPage, gRenderer, gBackPageButtonTexture);
-
-        SDL_Rect* currentClip_ExitHelp = &gExitHelpButton[ExitHelpButton.currentSprite];
-        ExitHelpButton.Render(currentClip_ExitHelp, gRenderer, gExitHelpButtonTexture);
-
-        SDL_RenderPresent(gRenderer);
-    }
-
-    // Skin Selector
-    SDL_Rect skin1 = {60, 0, 125, 360};
-    SDL_Rect skin2 = {244, 0, 125, 360};
-    SDL_Rect skin3 = {429, 0, 125, 360};
-    SDL_Rect skin4 = {616, 0, 125, 360};
-    int skinNumber = 0;
-    while (!Quit_skinSelector) {
-        SDL_Event e_mouse;
-        while (SDL_PollEvent(&e_mouse) != 0) {
-            if (isMouseInRect(&e_mouse, skin1)) {
-                skinNumber = 1;
-                if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
-                    Mix_PlayChannel(-1, gClick, 0);
-                    lockedSkin = 1;
-                }
-            } else if (isMouseInRect(&e_mouse, skin2)) {
-                skinNumber = 2;
-                if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
-                    Mix_PlayChannel(-1, gClick, 0);
-                    lockedSkin = 2;
-                }
-            } else if (isMouseInRect(&e_mouse, skin3)) {
-                skinNumber = 3;
-                if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
-                    Mix_PlayChannel(-1, gClick, 0);
-                    lockedSkin = 3;
-                }
-            } else if (isMouseInRect(&e_mouse, skin4)) {
-                skinNumber = 4;
-                if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
-                    Mix_PlayChannel(-1, gClick, 0);
-                    lockedSkin = 4;
-                }
-            } else {
-                skinNumber = 0;
-            }
-            HandlePlayButton(&e_mouse, OkButton, Quit_skinSelector, Play_Again, gClick);
-            HandleExitHelpButton(&e_mouse, ExitHelpButton, Quit_Menu, Quit_skinSelector, Play_Again, gClick);
-        }
-
-        if (!lockedSkin)
-            gSkinSelectorTexture[skinNumber].Render(0, 0, gRenderer);
-        else
-            gSkinSelectorTexture[lockedSkin].Render(0, 0, gRenderer);
-        SDL_Rect* currentClip_ExitHelp = &gExitHelpButton[ExitHelpButton.currentSprite];
-        ExitHelpButton.Render(currentClip_ExitHelp, gRenderer, gExitHelpButtonTexture);
-        SDL_Rect* currentClip_Ok = &gOkButton[OkButton.currentSprite];
-        OkButton.Render(currentClip_Ok, gRenderer, gOkButtonTexture);
-        SDL_RenderPresent(gRenderer);
-    }
-
-    // Game Loop
-    while (Play_Again) {
-        srand(time(NULL));
-        int frame_Character = 0;
-        int score = 0;
-        int time = 0;
-        int highscore = GetHighScoreFromFile("high_score.txt"); // Lấy highscore dạng int
-
-        obstacles.clear();
-        resetGame(player, obstacles, spikes, powerUps, running, isJumping, obstacleSpeed, currentGroundLevel);
-
-        float lastPlatformX = obstacles.empty() ? 0 : obstacles.back().rect.x + obstacles.back().rect.w;
-        Mix_PlayMusic(gMusic, IS_REPEATITIVE);
-
-        int OffsetSpeed_Ground = BASE_OFFSET_SPEED;
-        vector<double> OffsetSpeed_Bkgr(BACKGROUND_LAYER, BASE_OFFSET_SPEED);
-
-        bool Quit = false;
-        bool Game_State = true;
-
-        while (!Quit) {
-            SDL_Event e;
-            while (SDL_PollEvent(&e) != 0) {
-                if (e.type == SDL_QUIT) {
-                    running = false;
-                    Quit = true;
-                    Play_Again = false;
-                }
-                HandlePauseButton(&e, gRenderer, gContinueButton, PauseButton, ContinueButton,
-                                  gContinueButtonTexture, Game_State, gClick);
-                if (Game_State) {
-                    if (e.type == SDL_KEYDOWN) {
-                        if (e.key.keysym.sym == SDLK_SPACE && !isJumping) {
-                            isJumping = true;
-                            Mix_PlayChannel(MIX_CHANNEL, gJump, NOT_REPEATITIVE);
-                            player.y_velocity = JUMP_FORCE;
-                        }
-                        if (e.key.keysym.sym == SDLK_m && bulletCount > 0) {
-                            Mix_PlayChannel(MIX_CHANNEL, gShoot, NOT_REPEATITIVE);
-                            Bullet bullet;
-                            bullet.rect = {player.rect.x + 20, player.rect.y + (player.rect.h - BULLET_SIZE) / 2 - 10, BULLET_SIZE, BULLET_SIZE};
-                            bullet.collisionRect = {player.rect.x + 20, player.rect.y + (player.rect.h - BULLET_SIZE) / 2 - 10, BULLET_SIZE, BULLET_SIZE};
-                            bullet.x_velocity = BULLET_SPEED;
-                            bullet.y_velocity = 0;
-                            bullet.startX = bullet.rect.x;
-                            bullets.push_back(bullet);
-                            bulletCount--;
-                            //cout << "Shot bullet" << bulletCount << " bullets." << endl;
+                //Sound (2)
+                else if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
+                    if (e_mouse.button.button == SDL_BUTTON_LEFT) {
+                        SDL_Point mousePos = { e_mouse.button.x, e_mouse.button.y };
+                        if (mousePos.y >= SLIDER_Y - 10 &&
+                                mousePos.y <= SLIDER_Y + 10 &&
+                                mousePos.x >= SLIDER_START_X &&
+                                mousePos.x <= SLIDER_END_X) {
+                            currentX = mousePos.x;
+                            currentX = SDL_clamp(currentX, SLIDER_START_X, SLIDER_END_X);
+                            isDragging = true;
                         }
                     }
-                }
-            }
-
-            if (Game_State) {
-                UpdateGameTimeAndScore(time, score);
-                //cout << score << endl;
-                int obstacleWidth = 3000 + (rand() % 500);
-                currentGroundLevel = (currentGroundLevel == GROUND_LEVEL_LOW) ? GROUND_LEVEL_HIGH : GROUND_LEVEL_LOW;
-                int newPlatformX = lastPlatformX + (rand() % MAX_PLATFORM_GAP) + 200;
-
-                GameObject obstacle;
-                obstacle.rect = {newPlatformX, currentGroundLevel, obstacleWidth, 10};
-                obstacle.collisionRect = {newPlatformX, currentGroundLevel, obstacleWidth, 5};
-                //obstacle.color = COLOR_RED;
-                obstacle.x_velocity = -obstacleSpeed;
-                obstacle.y_velocity = 0;
-                obstacles.push_back(obstacle);
-                lastPlatformX = obstacle.rect.x + obstacle.rect.w;
-
-                if ((float)rand() / RAND_MAX < SPIKE_PROBABILITY) {
-                    int numSpikes = 1 + (rand() % MAX_SPIKES_PER_PLATFORM);
-                    int spikeSpacing = obstacleWidth / (numSpikes + 1);
-                    for (int i = 1; i <= numSpikes; ++i) {
-                        GameObject spike;
-                        spike.type = (rand() % 2);
-                        if (spike.type == 1) {
-                            int randomRobotHeight = rand() % 100;
-                            spike.rect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2 - 10, currentGroundLevel - ROBOT_SIZE - randomRobotHeight, ROBOT_SIZE, ROBOT_SIZE};
-                            spike.collisionRect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2, currentGroundLevel - ROBOT_SIZE + 20 - randomRobotHeight, ROBOT_COLLISION_SIZE, ROBOT_COLLISION_SIZE};
-                        } else {
-                            spike.rect = {newPlatformX + i * spikeSpacing - POISON_SIZE / 2, currentGroundLevel - POISON_SIZE + 25, POISON_SIZE, POISON_SIZE};
-                            spike.collisionRect = {newPlatformX + i * spikeSpacing - POISON_SIZE / 2 + 15, currentGroundLevel - POISON_SIZE + 35, POSION_COLLISION_SIZE, POSION_COLLISION_SIZE};
-                        }
-                        spike.x_velocity = -obstacleSpeed;
-                        spike.y_velocity = 0;
-                        spike.isLethal = true;
-                        spike.currentFrame = 0;
-                        spikes.push_back(spike);
+                } else if (e_mouse.type == SDL_MOUSEBUTTONUP) {
+                    if (e_mouse.button.button == SDL_BUTTON_LEFT) {
+                        isDragging = false;
+                    }
+                } else if (e_mouse.type == SDL_MOUSEMOTION) {
+                    if (isDragging) {
+                        currentX = SDL_clamp(e_mouse.motion.x, SLIDER_START_X, SLIDER_END_X);
                     }
                 }
 
-                if ((float)rand() / RAND_MAX < POWERUP_PROBABILITY) {
-                    GameObject powerUp;
-                    powerUp.rect = {newPlatformX + (rand() % obstacleWidth) - POWERUP_SIZE / 2, currentGroundLevel - POWERUP_SIZE + 14, POWERUP_SIZE, POWERUP_SIZE};
-                    powerUp.collisionRect = {powerUp.rect.x, powerUp.rect.y, POWERUP_SIZE, POWERUP_SIZE};
-                    powerUp.x_velocity = -obstacleSpeed;
-                    powerUp.y_velocity = 0;
-                    powerUp.isLethal = false;
-                    powerUp.currentFrame = 0;
-                    powerUp.type = 0;
-                    powerUps.push_back(powerUp);
-                }
-
-                for (auto it = obstacles.begin(); it != obstacles.end();) {
-                    it->rect.x += it->x_velocity;
-                    it->collisionRect.x += it->x_velocity;
-                    if (it->rect.x + it->rect.w < 0) it = obstacles.erase(it);
-                    else ++it;
-                }
-
-                for (auto it = spikes.begin(); it != spikes.end();) {
-                    it->rect.x += it->x_velocity;
-                    it->collisionRect.x += it->x_velocity;
-                    if (it->rect.x + it->rect.w < 0) it = spikes.erase(it);
-                    else ++it;
-                }
-
-                for (auto it = bullets.begin(); it != bullets.end();) {
-                    it->rect.x += it->x_velocity;
-                    it->collisionRect.x += it->x_velocity;
-                    bool hitSpike2 = false;
-                    for (auto spikeIt = spikes.begin(); spikeIt != spikes.end();) {
-                        if (spikeIt->type == 1 && checkAABBCollision(it->collisionRect, spikeIt->collisionRect)) {
-                            spikeIt = spikes.erase(spikeIt);
-                            hitSpike2 = true;
-                            score += 200;
-                            break;
-                        } else ++spikeIt;
-                    }
-                    float distanceTraveled = it->rect.x - it->startX;
-                    if (hitSpike2 || distanceTraveled > BULLET_RANGE) it = bullets.erase(it);
-                    else ++it;
-                }
-
-                isOnGround = false;
-                collided = true;
-                for (const auto& obstacle : obstacles) {
-                    if (checkAABBCollision(player.collisionRect, obstacle.collisionRect)) {
-                        collided = false;
-                        if (player.y_velocity >= 0) {
-                            player.collisionRect.y = obstacle.collisionRect.y - player.collisionRect.h;
-                            player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y;
-                            player.y_velocity = 0;
-                            isJumping = false;
-                            isOnGround = true;
-                        }
-                    }
-                }
-
-                for (auto it = spikes.begin(); it != spikes.end();) {
-                    if (checkAABBCollision(player.collisionRect, it->collisionRect)) {
-                        //cout << "Hit spike" << endl;
-                        REMAINING_HEARTS--;
-                        Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
-                        it = spikes.erase(it);
-                        if (REMAINING_HEARTS <= 0) {
-                            running = false;
-                            break;
-                        }
-                        SDL_Delay(500);
-                    } else ++it;
-                }
-
-                for (auto it = powerUps.begin(); it != powerUps.end();) {
-                    it->rect.x += it->x_velocity;
-                    it->collisionRect.x += it->x_velocity;
-                    if (it->collisionRect.x + it->collisionRect.w < 0) {
-                        it = powerUps.erase(it);
-                    } else {
-                        if (checkAABBCollision(player.collisionRect, it->collisionRect)) {
-                            Mix_PlayChannel(MIX_CHANNEL, gBuff, NOT_REPEATITIVE);
-                            bulletCount += addBullets;
-                            if(bulletCount > 10)
-                                bulletCount = 10;
-                            //cout << "Picked up power-up" << bulletCount << " bullets" << endl;
-                            it = powerUps.erase(it);
-                        } else {
-                            ++it;
-                        }
-                    }
-                }
-
-                if (!isOnGround && player.collisionRect.y > SCREEN_HEIGHT) {
-                    //cout << "Fell off platform" << endl;
-                    REMAINING_HEARTS = 0;
-                    Mix_PauseMusic();
-                    Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
-                    UpdateHighScore("high_score.txt", score, highscore);
-                    Quit = true;
-
-                    gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
-                    SDL_RenderPresent(gRenderer);
-
-                    if (gameStateTexture) SDL_DestroyTexture(gameStateTexture);
-                    SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
-                                               0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-                    SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, tempSurface->pixels, tempSurface->pitch);
-                    gameStateTexture = SDL_CreateTextureFromSurface(gRenderer, tempSurface);
-                    SDL_FreeSurface(tempSurface);
-                }
-
-                if (!REMAINING_HEARTS) {
-                    UpdateHighScore("high_score.txt", score, highscore);
-                    gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
-                    SDL_RenderPresent(gRenderer);
-                    if (gameStateTexture) SDL_DestroyTexture(gameStateTexture);
-                    SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
-                                               0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-                    SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, tempSurface->pixels, tempSurface->pitch);
-                    gameStateTexture = SDL_CreateTextureFromSurface(gRenderer, tempSurface);
-                    SDL_FreeSurface(tempSurface);
-                    Quit = true;
-                }
-
-                player.y_velocity += GRAVITY;
-                player.collisionRect.y += player.y_velocity;
-                player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y;
             }
 
-            SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-            SDL_RenderClear(gRenderer);
-
-            if (Game_State) {
-                for (int i = 0; i < BACKGROUND_LAYER; ++i) {
-                    OffsetSpeed_Bkgr[i] -= layer_speed[i];
-                    if (OffsetSpeed_Bkgr[i] < -gBackgroundTexture[i].GetWidth()) {
-                        OffsetSpeed_Bkgr[i] = 0;
-                    }
-                    gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i], 0, gRenderer);
-                    gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
-                }
-                //gBackgroundCoatingTexture.Render(0, 0, gRenderer);
-            } else {
-                for (int i = 0; i < BACKGROUND_LAYER; ++i) {
-                    gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i], 0, gRenderer);
-                    gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
-                }
-                //gBackgroundCoatingTexture.Render(0, 0, gRenderer);
-            }
-            gBackgroundCoatingTexture.Render(0, 0, gRenderer);
-            for (auto& obstacle : obstacles) {
-                SDL_RenderCopy(gRenderer, groundTexture, NULL, &obstacle.rect);
-            }
-
-            for (const auto& spike : spikes) {
-                if (spike.type == 0) {
-                    SDL_RenderCopy(gRenderer, spikeTexture, nullptr, &spike.rect);
-                } else {
-                    SDL_RenderCopy(gRenderer, robotTexture, nullptr, &spike.rect);
-                }
-                //check collision area
-                //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
-            }
-
-            for (const auto& bullet : bullets) {
-                gBulletTexture.Render(bullet.rect.x, bullet.rect.y, gRenderer);
-                //check collision area
-                //SDL_RenderDrawRect(gRenderer, &bullet.collisionRect);
-            }
-
-            for (const auto& powerUp : powerUps) {
-                SDL_RenderCopy(gRenderer, powerUpTexture, nullptr, &powerUp.rect);
-                //check collision area
-                //SDL_RenderDrawRect(gRenderer, &powerUp.collisionRect);
-            }
-
-            if (Game_State) {
-                SDL_Rect* currentClip_Pause = &gPauseButton[PauseButton.currentSprite];
-                PauseButton.Render(currentClip_Pause, gRenderer, gPauseButtonTexture);
-            } else {
-                SDL_Rect* currentClip_Continue = &gContinueButton[ContinueButton.currentSprite];
-                ContinueButton.Render(currentClip_Continue, gRenderer, gContinueButtonTexture);
-            }
-
-            gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
+            //Render Menu
+            //Render Pics
+            gMenuTexture.Render(0, 0, gRenderer);
+            gTransTexture.Render(0, 0, gRenderer);
 
             Uint32 currentTime = SDL_GetTicks();
-            if (Game_State && currentTime - lastFrameTime >= frameDelay_character) {
-                currentFrame = (currentFrame + 1) % 4;
+            if (currentTime - lastFrameTime >= frameDelay) {
+                currentFrame = (currentFrame + 1) % 3;
                 lastFrameTime = currentTime;
             }
+            gLabtubeTexture.Render(0, 0, gRenderer, &gLabtube[currentFrame]);
+            gVineTexture.Render(0, 0, gRenderer);
+            gNameTexture.Render(0, 0, gRenderer);
 
-            SDL_Rect* currentClip_Character = &gCharacterClips[currentFrame];
-            SDL_RenderCopy(gRenderer, gCharacterTexture[lockedSkin].mTexture, currentClip_Character, &player.rect);
-            //SDL_RenderDrawRect(gRenderer, &player.collisionRect);
+            //Render Buttons
+            if (volume) {
+                SDL_Rect* currentClip_SoundOn = &gSoundOnButton[SoundOnButton.currentSprite];
+                SoundOnButton.Render(currentClip_SoundOn, gRenderer, gSoundOnButtonTexture);
+            } else {
+                SDL_Rect* currentClip_SoundOff = &gSoundOffButton[SoundOffButton.currentSprite];
+                SoundOffButton.Render(currentClip_SoundOff, gRenderer, gSoundOffButtonTexture);
+            }
 
-            DrawBullet(gBulletTexture, gRemainBulletTexture, textColor, gRenderer, gFont, bulletCount);
-            DrawPlayerScore(gText1Texture, gScoreTexture, textColor,gRenderer, gFont, score);
-            DrawPlayerHighScore(gText2Texture, gHighScoreTexture, textColor, gRenderer, gFont, highscore);
+            SDL_Rect* currentClip_Close = &gCloseButton[CloseButton.currentSprite];
+            CloseButton.Render(currentClip_Close, gRenderer, gCloseButtonTexture);
+            SDL_Rect* currentClip_Setting = &gSettingButton[SettingButton.currentSprite];
+            SettingButton.Render(currentClip_Setting, gRenderer, gSettingButtonTexture);
+            //SDL_Rect* currentClip_Menu = &gMenuButton[MenuButton.currentSprite];
+            //MenuButton.Render(currentClip_Menu, gRenderer, gMenuButtonTexture);
+            SDL_Rect* currentClip_Play = &gPlayButton[PlayButton.currentSprite];
+            PlayButton.Render(currentClip_Play, gRenderer, gPlayButtonTexture);
+            SDL_Rect* currentClip_Help = &gHelpButton[HelpButton.currentSprite];
+            HelpButton.Render(currentClip_Help, gRenderer, gHelpButtonTexture);
+
+            SDL_Rect sliderRect = {SLIDER_START_X, SLIDER_Y - 5, SLIDER_END_X - SLIDER_START_X, 13};
+            SDL_RenderCopy(gRenderer, sliderTexture, NULL, &sliderRect);
+
+            SDL_Rect knobRect = {currentX - KNOB_SIZE / 2, SLIDER_Y - KNOB_SIZE / 2 + 2, KNOB_SIZE, KNOB_SIZE};
+            SDL_RenderCopy(gRenderer, knobTexture, NULL, &knobRect);
+            //SDL_Rect test = {0,0,600,600};
+            //gExitButtonTexture.Render(0,0,gRenderer,&test);
+            SDL_RenderPresent(gRenderer);
+        }
+
+        //Instruction
+        int pageNumber = 0;
+        while(!Quit_Instruction) {
+            SDL_Event e_mouse;
+            while (SDL_PollEvent(&e_mouse) != 0) {
+                if (e_mouse.type == SDL_QUIT) {
+                    Close();
+                    return 0;
+                }
+                HandleNextPageButton(&e_mouse, NextPageButton, pageNumber, gClick);
+                HandleBackButton(&e_mouse, BackPageButton, pageNumber, gClick);
+                HandleExitHelpButton(&e_mouse, ExitHelpButton, Quit_Menu, Quit_Instruction, Play_Again, gClick);
+            }
+
+            gHelpTexture[pageNumber].Render(0, 0, gRenderer);
+
+            SDL_Rect* currentClip_NextPage = &gNextPageButton[NextPageButton.currentSprite];
+            NextPageButton.Render(currentClip_NextPage, gRenderer, gNextPageButtonTexture);
+
+            SDL_Rect* currentClip_BackPage = &gBackPageButton[BackPageButton.currentSprite];
+            BackPageButton.Render(currentClip_BackPage, gRenderer, gBackPageButtonTexture);
+
+            SDL_Rect* currentClip_ExitHelp = &gExitHelpButton[ExitHelpButton.currentSprite];
+            ExitHelpButton.Render(currentClip_ExitHelp, gRenderer, gExitHelpButtonTexture);
 
             SDL_RenderPresent(gRenderer);
         }
 
-        if (Play_Again) {
-            REMAINING_HEARTS = 3;
-            bool End_Game = false;
-            SDL_Event e;
+        // Skin Selector
+        //Set interact area
+        SDL_Rect skin1 = {60, 0, 125, 360};
+        SDL_Rect skin2 = {244, 0, 125, 360};
+        SDL_Rect skin3 = {429, 0, 125, 360};
+        SDL_Rect skin4 = {616, 0, 125, 360};
+        int skinNumber = 0;
+        while (!Quit_skinSelector) {
+            SDL_Event e_mouse;
+            while (SDL_PollEvent(&e_mouse) != 0) {
+                if (e_mouse.type == SDL_QUIT) {
+                    Close();
+                    return 0;
+                }
+                if (isMouseInRect(&e_mouse, skin1)) {
+                    skinNumber = 1;
+                    if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
+                        Mix_PlayChannel(-1, gClick, 0);
+                        lockedSkin = 1;
+                    }
+                } else if (isMouseInRect(&e_mouse, skin2)) {
+                    skinNumber = 2;
+                    if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
+                        Mix_PlayChannel(-1, gClick, 0);
+                        lockedSkin = 2;
+                    }
+                } else if (isMouseInRect(&e_mouse, skin3)) {
+                    skinNumber = 3;
+                    if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
+                        Mix_PlayChannel(-1, gClick, 0);
+                        lockedSkin = 3;
+                    }
+                } else if (isMouseInRect(&e_mouse, skin4)) {
+                    skinNumber = 4;
+                    if (e_mouse.type == SDL_MOUSEBUTTONDOWN) {
+                        Mix_PlayChannel(-1, gClick, 0);
+                        lockedSkin = 4;
+                    }
+                } else {
+                    skinNumber = 0;
+                }
+                HandlePlayButton(&e_mouse, OkButton, Quit_skinSelector, Play_Again, gClick);
+                HandleExitHelpButton(&e_mouse, ExitHelpButton, Quit_Menu, Quit_skinSelector, Play_Again, gClick);
+            }
 
-            while (!End_Game) {
+            if (!lockedSkin)
+                gSkinSelectorTexture[skinNumber].Render(0, 0, gRenderer);
+            else
+                gSkinSelectorTexture[lockedSkin].Render(0, 0, gRenderer);
+            SDL_Rect* currentClip_ExitHelp = &gExitHelpButton[ExitHelpButton.currentSprite];
+            ExitHelpButton.Render(currentClip_ExitHelp, gRenderer, gExitHelpButtonTexture);
+            SDL_Rect* currentClip_Ok = &gOkButton[OkButton.currentSprite];
+            OkButton.Render(currentClip_Ok, gRenderer, gOkButtonTexture);
+            SDL_RenderPresent(gRenderer);
+        }
+
+        // Game Loop
+        while (Play_Again) {
+            srand(time(NULL));
+            int frame_Character = 0;
+            int score = 0;
+            int time = 0;
+            int highscore = GetHighScoreFromFile("high_score.txt"); // Lấy highscore dạng int
+
+            obstacles.clear();
+            resetGame(player, obstacles, spikes, powerUps, running, isJumping, obstacleSpeed, currentGroundLevel);
+
+            float lastPlatformX = obstacles.empty() ? 0 : obstacles.back().rect.x + obstacles.back().rect.w;
+            Mix_PlayMusic(gMusic, IS_REPEATITIVE);
+
+            int OffsetSpeed_Ground = BASE_OFFSET_SPEED;
+            vector<double> OffsetSpeed_Bkgr(BACKGROUND_LAYER, BASE_OFFSET_SPEED);
+
+            bool Quit = false;
+            bool Game_State = true;
+
+            while (!Quit) {
+                SDL_Event e;
                 while (SDL_PollEvent(&e) != 0) {
                     if (e.type == SDL_QUIT) {
-                        End_Game = true;
-                        Play_Again = false;
-                    }
-                    if (HandleAgainButton(&e, AgainButton, gClick)) {
-                        obstacles.clear();
-                        resetGame(player, obstacles, spikes, powerUps, running, isJumping, obstacleSpeed, currentGroundLevel);
-                        End_Game = true;
-                    }
-                    if (HandleQuitButton(&e, ExitButton, gClick)) {
                         Close();
                         return 0;
                     }
+                    HandlePauseButton(&e, gRenderer, gContinueButton, PauseButton, ContinueButton,
+                                      gContinueButtonTexture, Game_State, gClick);
+                    if (Game_State) {
+                        if (e.type == SDL_KEYDOWN) {
+                            //if (e.type == SDL_QUIT) Quit == true;
+                            if (e.key.keysym.sym == SDLK_SPACE && !isJumping) {
+                                isJumping = true;
+                                Mix_PlayChannel(MIX_CHANNEL, gJump, NOT_REPEATITIVE);
+                                player.y_velocity = JUMP_FORCE;
+                            }
+                            if (e.key.keysym.sym == SDLK_m && bulletCount > 0) {
+                                Mix_PlayChannel(MIX_CHANNEL, gShoot, NOT_REPEATITIVE);
+                                Bullet bullet;
+                                bullet.rect = {player.rect.x + 20, player.rect.y + (player.rect.h - BULLET_SIZE) / 2 - 10, BULLET_SIZE, BULLET_SIZE};
+                                bullet.collisionRect = {player.rect.x + 20, player.rect.y + (player.rect.h - BULLET_SIZE) / 2 - 10, BULLET_SIZE, BULLET_SIZE};
+                                bullet.x_velocity = BULLET_SPEED;
+                                bullet.y_velocity = 0;
+                                bullet.startX = bullet.rect.x;
+                                bullets.push_back(bullet);
+                                bulletCount--;
+                                //cout << "Shot bullet" << bulletCount << " bullets." << endl;
+                            }
+                        }
+                    }
                 }
 
-                SDL_RenderCopy(gRenderer, gameStateTexture, NULL, NULL);
-                gLoseTexture.Render(0, 0, gRenderer);
-                SDL_Rect* currentClip_Again = &gAgainButton[AgainButton.currentSprite];
-                AgainButton.Render(currentClip_Again, gRenderer, gAgainButtonTexture);
-                SDL_Rect* currentClip_Exit = &gExitButton[ExitButton.currentSprite];
-                ExitButton.Render(currentClip_Exit, gRenderer, gQuitButtonTexture);
+                if (Game_State) {
+                    UpdateGameTimeAndScore(time, score);
+                    //cout << score << endl;
+                    int obstacleWidth = 3000 + (rand() % 500);
+                    currentGroundLevel = (currentGroundLevel == GROUND_LEVEL_LOW) ? GROUND_LEVEL_HIGH : GROUND_LEVEL_LOW;
+                    int newPlatformX = lastPlatformX + (rand() % MAX_PLATFORM_GAP) + 200;
+
+                    //Spawn obstacles (Run ground)
+                    GameObject obstacle;
+                    obstacle.rect = {newPlatformX, currentGroundLevel, obstacleWidth, 10};
+                    obstacle.collisionRect = {newPlatformX, currentGroundLevel, obstacleWidth, 5};
+                    //obstacle.color = COLOR_RED;
+                    obstacle.x_velocity = -obstacleSpeed;
+                    obstacle.y_velocity = 0;
+                    obstacles.push_back(obstacle);
+                    lastPlatformX = obstacle.rect.x + obstacle.rect.w;
+
+                    // Spawn spikes
+                    if ((float)rand() / RAND_MAX < SPIKE_PROBABILITY) {
+                        int numSpikes = 1 + (rand() % MAX_SPIKES_PER_PLATFORM);
+                        int spikeSpacing = obstacleWidth / (numSpikes + 1);
+                        for (int i = 1; i <= numSpikes; ++i) {
+                            GameObject spike;
+                            spike.type = (rand() % 2);
+                            if (spike.type == 1) {
+                                int randomRobotHeight = rand() % 100;
+                                spike.rect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2 - 10, currentGroundLevel - ROBOT_SIZE - randomRobotHeight, ROBOT_SIZE, ROBOT_SIZE};
+                                spike.collisionRect = {newPlatformX + i * spikeSpacing - ROBOT_SIZE / 2, currentGroundLevel - ROBOT_SIZE + 20 - randomRobotHeight, ROBOT_COLLISION_SIZE, ROBOT_COLLISION_SIZE};
+                            } else {
+                                spike.rect = {newPlatformX + i * spikeSpacing - POISON_SIZE / 2, currentGroundLevel - POISON_SIZE + 25, POISON_SIZE, POISON_SIZE};
+                                spike.collisionRect = {newPlatformX + i * spikeSpacing - POISON_SIZE / 2 + 15, currentGroundLevel - POISON_SIZE + 35, POSION_COLLISION_SIZE, POSION_COLLISION_SIZE};
+                            }
+                            spike.x_velocity = -obstacleSpeed;
+                            spike.y_velocity = 0;
+                            spike.isLethal = true;
+                            spike.currentFrame = 0;
+                            spikes.push_back(spike);
+                        }
+                    }
+                    //Spawn powerup
+                    if ((float)rand() / RAND_MAX < POWERUP_PROBABILITY) {
+                        GameObject powerUp;
+                        powerUp.rect = {newPlatformX + (rand() % obstacleWidth) - POWERUP_SIZE / 2, currentGroundLevel - POWERUP_SIZE + 14, POWERUP_SIZE, POWERUP_SIZE};
+                        powerUp.collisionRect = {powerUp.rect.x, powerUp.rect.y, POWERUP_SIZE, POWERUP_SIZE};
+                        powerUp.x_velocity = -obstacleSpeed;
+                        powerUp.y_velocity = 0;
+                        powerUp.isLethal = false;
+                        powerUp.currentFrame = 0;
+                        powerUp.type = 0;
+                        powerUps.push_back(powerUp);
+                    }
+                    //Erase obstacles and spikes when ran out of screen
+                    for (auto it = obstacles.begin(); it != obstacles.end();) {
+                        it->rect.x += it->x_velocity;
+                        it->collisionRect.x += it->x_velocity;
+                        if (it->rect.x + it->rect.w < 0) it = obstacles.erase(it);
+                        else ++it;
+                    }
+
+                    for (auto it = spikes.begin(); it != spikes.end();) {
+                        it->rect.x += it->x_velocity;
+                        it->collisionRect.x += it->x_velocity;
+                        if (it->rect.x + it->rect.w < 0) it = spikes.erase(it);
+                        else ++it;
+                    }
+                    /////
+
+                    //Bullet
+                    for (auto it = bullets.begin(); it != bullets.end();) {
+                        it->rect.x += it->x_velocity;
+                        it->collisionRect.x += it->x_velocity;
+                        bool hitSpike2 = false;
+                        for (auto spikeIt = spikes.begin(); spikeIt != spikes.end();) {
+                            if (spikeIt->type == 1 && checkAABBCollision(it->collisionRect, spikeIt->collisionRect)) {
+                                spikeIt = spikes.erase(spikeIt);
+                                hitSpike2 = true;
+                                score += 200;
+                                break;
+                            } else ++spikeIt;
+                        }
+                        float distanceTraveled = it->rect.x - it->startX;
+                        if (hitSpike2 || distanceTraveled > BULLET_RANGE) it = bullets.erase(it);
+                        else ++it;
+                    }
+
+                    //Check collision between player/spikes, player/run ground, player/powerup
+                    isOnGround = false;
+                    collided = true;
+                    for (const auto& obstacle : obstacles) {
+                        if (checkAABBCollision(player.collisionRect, obstacle.collisionRect)) {
+                            collided = false;
+                            if (player.y_velocity >= 0) {
+                                player.collisionRect.y = obstacle.collisionRect.y - player.collisionRect.h;
+                                player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y;
+                                player.y_velocity = 0;
+                                isJumping = false;
+                                isOnGround = true;
+                            }
+                        }
+                    }
+
+
+                    for (auto it = spikes.begin(); it != spikes.end();) {
+                        if (checkAABBCollision(player.collisionRect, it->collisionRect)) {
+                            //cout << "Hit spike" << endl;
+                            REMAINING_HEARTS--;
+                            Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
+                            it = spikes.erase(it);
+                            if (REMAINING_HEARTS <= 0) {
+                                running = false;
+                                break;
+                            }
+                            SDL_Delay(500);
+                        } else ++it;
+                    }
+
+                    for (auto it = powerUps.begin(); it != powerUps.end();) {
+                        it->rect.x += it->x_velocity;
+                        it->collisionRect.x += it->x_velocity;
+                        if (it->collisionRect.x + it->collisionRect.w < 0) {
+                            it = powerUps.erase(it);
+                        } else {
+                            if (checkAABBCollision(player.collisionRect, it->collisionRect)) {
+                                Mix_PlayChannel(MIX_CHANNEL, gBuff, NOT_REPEATITIVE);
+                                bulletCount += addBullets;
+                                if(bulletCount > 10)
+                                    bulletCount = 10;
+                                //cout << "Picked up power-up" << bulletCount << " bullets" << endl;
+                                it = powerUps.erase(it);
+                            } else {
+                                ++it;
+                            }
+                        }
+                    }
+                    //////
+
+                    //after dead process
+                    if (!isOnGround && player.collisionRect.y > SCREEN_HEIGHT) {
+                        //cout << "Fell off platform" << endl;
+                        REMAINING_HEARTS = 0;
+                        Mix_PauseMusic();
+                        Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
+                        UpdateHighScore("high_score.txt", score, highscore);
+                        Quit = true;
+
+                        gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
+                        SDL_RenderPresent(gRenderer);
+
+                        if (gameStateTexture) SDL_DestroyTexture(gameStateTexture);
+                        SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
+                                                   0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+                        SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, tempSurface->pixels, tempSurface->pitch);
+                        gameStateTexture = SDL_CreateTextureFromSurface(gRenderer, tempSurface);
+                        SDL_FreeSurface(tempSurface);
+                    }
+
+                    if (!REMAINING_HEARTS) {
+                        UpdateHighScore("high_score.txt", score, highscore);
+                        gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
+                        SDL_RenderPresent(gRenderer);
+                        if (gameStateTexture) SDL_DestroyTexture(gameStateTexture);
+                        SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
+                                                   0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+                        SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, tempSurface->pixels, tempSurface->pitch);
+                        gameStateTexture = SDL_CreateTextureFromSurface(gRenderer, tempSurface);
+                        SDL_FreeSurface(tempSurface);
+                        Quit = true;
+                    }
+
+                    //Movement of player
+                    player.y_velocity += GRAVITY;
+                    player.collisionRect.y += player.y_velocity;
+                    player.rect.y = player.collisionRect.y + RENDER_OFFSET_Y;
+                }
+
+                //Render area
+                SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+                SDL_RenderClear(gRenderer);
+
+                if (Game_State) {
+                    //Ground render
+                    for (int i = 0; i < BACKGROUND_LAYER; ++i) {
+                        OffsetSpeed_Bkgr[i] -= layer_speed[i];
+                        if (OffsetSpeed_Bkgr[i] < -gBackgroundTexture[i].GetWidth()) {
+                            OffsetSpeed_Bkgr[i] = 0;
+                        }
+                        gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i], 0, gRenderer);
+                        gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
+                    }
+                    //gBackgroundCoatingTexture.Render(0, 0, gRenderer);
+                } else {
+                    for (int i = 0; i < BACKGROUND_LAYER; ++i) {
+                        gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i], 0, gRenderer);
+                        gBackgroundTexture[i].Render(OffsetSpeed_Bkgr[i] + gBackgroundTexture[i].GetWidth(), 0, gRenderer);
+                    }
+                    //gBackgroundCoatingTexture.Render(0, 0, gRenderer);
+                }
+                gBackgroundCoatingTexture.Render(0, 0, gRenderer);
+                for (auto& obstacle : obstacles) {
+                    SDL_RenderCopy(gRenderer, groundTexture, NULL, &obstacle.rect);
+                }
+
+                for (const auto& spike : spikes) {
+                    if (spike.type == 0) {
+                        SDL_RenderCopy(gRenderer, spikeTexture, nullptr, &spike.rect);
+                    } else {
+                        SDL_RenderCopy(gRenderer, robotTexture, nullptr, &spike.rect);
+                    }
+                    //check collision area
+                    //SDL_RenderDrawRect(gRenderer, &spike.collisionRect);
+                }
+
+                for (const auto& bullet : bullets) {
+                    gBulletTexture.Render(bullet.rect.x, bullet.rect.y, gRenderer);
+                    //check collision area
+                    //SDL_RenderDrawRect(gRenderer, &bullet.collisionRect);
+                }
+
+                for (const auto& powerUp : powerUps) {
+                    SDL_RenderCopy(gRenderer, powerUpTexture, nullptr, &powerUp.rect);
+                    //check collision area
+                    //SDL_RenderDrawRect(gRenderer, &powerUp.collisionRect);
+                }
+
+                if (Game_State) {
+                    SDL_Rect* currentClip_Pause = &gPauseButton[PauseButton.currentSprite];
+                    PauseButton.Render(currentClip_Pause, gRenderer, gPauseButtonTexture);
+                } else {
+                    SDL_Rect* currentClip_Continue = &gContinueButton[ContinueButton.currentSprite];
+                    ContinueButton.Render(currentClip_Continue, gRenderer, gContinueButtonTexture);
+                }
+
+                gHeartTexture.Render(REMAINING_HEARTS_POSX, REMAINING_HEARTS_POSY, gRenderer, &gHeart[REMAINING_HEARTS]);
+
+                Uint32 currentTime = SDL_GetTicks();
+                if (Game_State && currentTime - lastFrameTime >= frameDelay_character) {
+                    currentFrame = (currentFrame + 1) % 4;
+                    lastFrameTime = currentTime;
+                }
+
+                SDL_Rect* currentClip_Character = &gCharacterClips[currentFrame];
+                SDL_RenderCopy(gRenderer, gCharacterTexture[lockedSkin].mTexture, currentClip_Character, &player.rect);
+                //SDL_RenderDrawRect(gRenderer, &player.collisionRect);
+
+                DrawBullet(gBulletTexture, gRemainBulletTexture, textColor, gRenderer, gFont, bulletCount);
+                DrawPlayerScore(gText1Texture, gScoreTexture, textColor,gRenderer, gFont, score);
+                DrawPlayerHighScore(gText2Texture, gHighScoreTexture, textColor, gRenderer, gFont, highscore);
+
                 SDL_RenderPresent(gRenderer);
             }
+            //After deađz
+            if (Play_Again) {
+                REMAINING_HEARTS = 3;
+                bool End_Game = false;
+                SDL_Event e;
+
+                while (!End_Game) {
+                    while (SDL_PollEvent(&e) != 0) {
+                        if (e.type == SDL_QUIT) {
+                            End_Game = true;
+                            Play_Again = false;
+                        }
+                        if (HandleAgainButton(&e, AgainButton, gClick)) {
+                            obstacles.clear();
+                            resetGame(player, obstacles, spikes, powerUps, running, isJumping, obstacleSpeed, currentGroundLevel);
+                            End_Game = true;
+                        }
+                        if (HandleQuitButton(&e, ExitButton, gClick)) {
+                            Close();
+                            return 0;
+                        }
+                    }
+
+                    SDL_RenderCopy(gRenderer, gameStateTexture, NULL, NULL);
+                    gLoseTexture.Render(0, 0, gRenderer);
+                    SDL_Rect* currentClip_Again = &gAgainButton[AgainButton.currentSprite];
+                    AgainButton.Render(currentClip_Again, gRenderer, gAgainButtonTexture);
+                    SDL_Rect* currentClip_Exit = &gExitButton[ExitButton.currentSprite];
+                    ExitButton.Render(currentClip_Exit, gRenderer, gQuitButtonTexture);
+                    SDL_RenderPresent(gRenderer);
+                }
+            }
         }
-    }
     }
     Close();
     return 0;
