@@ -47,6 +47,10 @@ The game involves a player character running continuously across platforms, avoi
   - **Images**: Backgrounds, buttons, skins, obstacles, power-ups (`images/` directory).
   - **Sounds**: Music and sound effects (jump, shoot, lose) in `sound/`.
   - **Fonts**: Pixel font for score display (`font/pixel_font.ttf`).
+## How To Open/Play:
+  Figure it yourself on this repo, or you can download this: [Google Drive](https://drive.google.com/file/d/1qtKCvi1Qj0xWXW7wgQJk9Zg3ObisgMVH/view?usp=drive_link)
+  - Execute the .zip file and run the .exe file (I made 2 file cuz I cant handle the FPS T-T).
+  - Source code is include in the .zip file too.
 
 ## References
 This project was built with guidance and inspiration from the following resources:
