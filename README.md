@@ -51,7 +51,7 @@ https://www.youtube.com/watch?v=RNzA3VogItw
   - **Sounds**: Music and sound effects (jump, shoot, lose) in `sound/`.
   - **Fonts**: Pixel font for score display (`font/pixel_font.ttf`).
 ## How To Open/Play
-  Figure it yourself on this repo, or you can download from this: [Google Drive](https://drive.google.com/file/d/1qtKCvi1Qj0xWXW7wgQJk9Zg3ObisgMVH/view?usp=drive_link)
+  Figure it yourself on this repo, or you can download from this: [Google Drive](https://drive.google.com/file/d/1qtKCvi1Qj0xWXW7wgQJk9Zg3ObisgMVH/view?usp=drive_link) (idk how to open it on another device too)
   - Execute the .zip file and run the .exe file (I made 2 files cuz I cant handle the FPS T-T).
   - Source code is included in the .zip file too.
 
