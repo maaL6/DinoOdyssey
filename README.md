@@ -4,6 +4,8 @@ This is my first game project, developed using SDL2 and C++. It is an endless ru
 
 ## Overview
 The game involves a player character running continuously across platforms, avoiding obstacles, and collecting power-ups. The objective is to achieve the highest score possible while the difficulty increases over time (currently the difficulty is fixed). It incorporates elements such as multiple ground levels, shooting mechanics, and customizable skins.
+https://www.youtube.com/watch?v=RNzA3VogItw
+[![DINO_ODYSSEY](https://img.youtube.com/RNzA3VogItw/0.jpg)](https://www.youtube.com/watch?v=RNzA3VogItw)
 
 ## Authors
 - **Fully developed by** [me](https://github.com/maaL6)
